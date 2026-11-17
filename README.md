@@ -27,6 +27,14 @@ The idea and the layout of this repo come from
 | `guide` | "guide" | Says how each skill works and, mid-chat, where the work stands and what to type next. |
 | `plain-talk` | "plain-talk" | Explains any ticket, bug or result in everyday words with real-life examples, no analogy unless asked. |
 | `unslop` | (automatic) | The writing style for every reply, plan, commit, PR and Jira comment. |
+| `agents-first` | (automatic, Claude only) | Runs at the start of every task. When the work splits, asks before spinning up several agents and picks the approach and the model for each. |
+| `agents-subagents` | "use subagents" | Helper Claudes inside one session: built-in types, agent files, models, limits. |
+| `agents-view` | "claude agents" | Background sessions you hand off and check on later. |
+| `agents-teams` | "spawn a team" | A lead and teammates who share a task list and message each other. |
+| `agents-messaging` | "tell the other session" | Passing findings and status between your sessions. |
+| `agents-workflows` | "use a workflow" | A script that runs dozens of subagents, with saving, resuming and cost limits. |
+| `agents-worktrees` | "use a worktree" | A separate copy of the repo per session or agent so edits don't collide. |
+| `agents-models` | "which model" | Which model and effort level fits each task and each agent. |
 | `postwork` | (automatic) | Reviewer: checks finished work against its ticket. |
 | `ticket-prework-review` | (automatic) | Reviewer: checks a ticket and plan before building starts. |
 
@@ -169,6 +177,24 @@ There is nothing to fill in before the first run. The skills ask for what they n
 `postwork` also reads Matt Pocock's `code-review` skill. That file is not in this repo. Copy it to `skills/postwork/references/matt-code-review.md`.
 
 Optional reviewers, used when installed: `interrogate` and `blast-radius` (pstack), `ponytail-review`, `thermo-nuclear-code-quality-review`, `grilling`, `diagnosing-bugs`, `tdd`. A missing reviewer shows as NOT RUN.
+
+## Run agents first (Claude Code)
+
+The `agents-*` skills come from the Claude Code docs pages on
+[subagents](https://code.claude.com/docs/en/sub-agents),
+[agent view](https://code.claude.com/docs/en/agent-view),
+[agent teams](https://code.claude.com/docs/en/agent-teams),
+[cross-session messaging](https://code.claude.com/docs/en/cross-session-messaging),
+[workflows](https://code.claude.com/docs/en/workflows),
+[worktrees](https://code.claude.com/docs/en/worktrees) and
+[model configuration](https://code.claude.com/docs/en/model-config).
+`agents-first` reads the others when it picks an approach.
+
+To run `agents-first` on every task, add this line to `~/.claude/CLAUDE.md`:
+
+```text
+When Claude is the main model, start every task with the agents-first skill: read and apply `~/.agents/skills/agents-first/SKILL.md`. When the task splits across agents, always ask before spinning them up.
+```
 
 ## Make them yours
 
