@@ -1,6 +1,6 @@
 ---
 name: full-send
-description: Takes a ticket, a bug or a request all the way to a merged PR in one go, with nobody watching. Runs blueprint, reproduce, ship, inspect, lane and babysit in order and stays on the PR until it is merged. Use when the user says "full send".
+description: Takes a ticket, a bug or a request all the way to a merged PR in one go, with nobody watching. Picks the track (fix-bug, build-feature or qa-return), then runs it through ship, inspect, lane and babysit, and stays on the PR until it is merged. Use when the user says "full send".
 ---
 
 Never assume a requirement. Check Jira for the latest requirements before acting. If a requirement is unclear or cannot be verified, ask the user in plain language before proceeding with work that depends on it.
@@ -33,10 +33,10 @@ It does not allow the items on the "Ask first" list, a merge, or anything touchi
 
 ## Steps
 
-1. **Plan.** Run `blueprint` with everything the user wrote. It finds the task, claims it, renames the chat, reproduces the bug with `reproduce`, researches, and writes the plan.
-   Done when `blueprint` step 9 has posted the plan and the simple explanation, and `gate before` printed PASS. A bug that will not reproduce is worked on for 3 rounds first (`reproduce` step 4). If it still will not, the run ends here, with the report and a question.
-2. **Build and check.** Run `ship`. It builds in the worktree, calls `inspect`, fixes what `inspect` finds, and repeats until the gate passes.
-   Done when the score is 100, the live run passed and the QA verdict is Done or Done with notes, all on one commit.
+1. **Pick the track and plan.** Pick the track as `blueprint` step 1 says: `as bug`, `as feature` or `as qa-return` in the call wins, then a merged PR with a newer QA comment means `qa-return`, issue type Bug means `fix-bug`, and Story or Task means `build-feature`. Run that track's skill with everything the user wrote, up to its plan. Skip its agent-plan question and use the recommended plan. It claims the task, renames the chat, takes the before proof, researches, and writes the plan.
+   Done when `blueprint` step 9 has posted the plan and the simple explanation, and `gate before` printed PASS. A bug that will not reproduce is worked on for 3 rounds first (`reproduce` step 4). If it still will not, or a QA return's verdict stops the work, the run ends here, with the report and a question.
+2. **Build and check.** Run `ship`. It builds with one builder per slice worktree, calls `inspect`, fixes what `inspect` finds, and repeats until the gate passes.
+   Done when the track's definition of done holds, the score is 100, the live run passed and the QA verdict is Done or Done with notes, all on one commit.
 3. **Prove.** `ship` step 5 takes the after proof with `lane` and calls `proof after`, which fills the right half of each picture, circles every change and checks it against what was asked. `Proof: NOT COMPLETE` means the work is not finished, and `ship` fixes it and tries again.
    Done when `gate after` printed PASS and the comparison images exist.
 4. **Open the PR and update Jira.** `ship` close-out.

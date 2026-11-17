@@ -66,7 +66,7 @@ Done when `unresolved_count` is 0 and nothing new is waiting.
 
 ## 5. Keep the branch up to date
 
-When the status shows a conflict or a branch that is behind, rebase onto the fresh default branch, run the checks, and push with `--force-with-lease` against the head you saw before the rebase. This is the only force-push allowed. If another PR already solved the same problem, stop, tell the user, and ask before closing anything. For a PR that has sat for weeks, use the `modernize` skill first.
+When the status shows a conflict or a branch that is behind, rebase onto the fresh default branch, run the checks, and push with `--force-with-lease` against the head you saw before the rebase. This is the only force-push allowed. A branch marked `git config branch.<branch>.syncMode merge` (a QA return sets it) is never rebased: merge `origin/<default branch>` into it, run the checks, and push without force. If another PR already solved the same problem, stop, tell the user, and ask before closing anything. For a PR that has sat for weeks, use the `modernize` skill first.
 
 ## 6. Stay until merged
 

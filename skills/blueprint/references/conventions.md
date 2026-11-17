@@ -19,17 +19,20 @@ Be strict and vigilant. These apply to every skill, every agent and every sub-ag
 
 | Order | Skill | Job | Ends with |
 |---|---|---|---|
-| 1 | `blueprint` | Understand the task, claim it, trace the requirements, research with sub-agents, write the plan | A checked plan, a decision log and a checklist |
-| 1a | `reproduce` | Called by `blueprint` for bugs. Replays the bug live and saves the before proof, through `proof before` | Repro steps, before screenshots and logs, a failing test |
-| 2 | `ship` | Build in the worktree with parallel sub-agents, fix what `inspect` finds | Commits that `inspect` passes |
+| 0 | `fix-bug`, `build-feature` or `qa-return` | The track. It agrees the agent plan once, runs the shared `blueprint` steps with its own before step, and says what "done" means for `ship` | The right start, plan and proof for a bug, a feature or a QA return |
+| 1 | `blueprint` | The shared steps: understand the task, claim it, trace the requirements, research with sub-agents, write the plan | A checked plan, a decision log and a checklist |
+| 1a | `reproduce` | Called by `fix-bug` and `qa-return`. Replays the bug, or QA's steps, live and saves the before proof, through `proof before` | Repro steps, before screenshots and logs, a failing test |
+| 2 | `ship` | Build with parallel sub-agents, each in its own slice worktree, fix what `inspect` finds | Commits that `inspect` passes |
 | 3 | `inspect` | Four code reviewers, a live run and a QA validation, scored out of 100 | A verdict. `ship` and `inspect` loop until both are satisfied |
 | 4 | `lane` | The private running app for every live step: before proof, live run, after proof | Screenshots and logs |
 | 5 | `ship` close-out | PR and Jira with before and after proof | An open PR and an updated ticket |
 | 6 | `babysit` | Fix CI, answer and resolve every comment, stay until merged | A merged PR |
 
+The track comes from the first line of `.scratch/<KEY>-ticket.md` (`Track: bug`, `feature` or `qa-return`). `blueprint` typed alone picks it (see its step 1). A QA return is the same ticket reopened after its PR was merged and deployed to dev: the fix goes on a new PR from the same branch, and the ticket goes back to Code Review with no tag.
+
 `full-send` runs all six stages in one go and keeps the chat open until the PR is merged. Side skills: `council` (three models review a plan or a change), `modernize` (bring an old PR up to date), `explain-jira` and `explain-pr` (explain Jira and GitHub comments in simple words).
 
-A bug is never planned before it has been reproduced, and it is reproduced in the live environment only: a running copy of the app, either local (Docker, or a `lane` for Aruva) or the deployed dev environment, never by reading code, a unit test or production. `blueprint` stops at its reproduce step when `reproduce` says `Reproduced: no` or `already fixed`.
+A bug is never planned before it has been reproduced, and it is reproduced in the live environment only: a running copy of the app, either local (Docker, or a `lane` for Aruva) or the deployed dev environment, never by reading code, a unit test or production. `fix-bug` and `qa-return` stop at their before step when `reproduce` says `Reproduced: no` or `already fixed`.
 
 Each skill starts the next one without asking. "just blueprint" stops after the plan. "build only" stops after the build. "just inspect" checks and reports without fixing.
 
@@ -65,7 +68,8 @@ A ticket key in the call (`blueprint PROJ-123`, a Jira link, or a bare number th
 - Skip the choose cards. Run the claim and every later step, and hand off to the next skill without asking.
 - Wherever a card would appear, pick the recommended option and say what you chose in one line.
 - A bare number: look it up in each project listed in `setup.md`. Use the project where the ticket exists. If it exists in several, take the first one listed.
-- Status: To Do or Backlog moves to In Progress. In Progress or Code Review, assigned to the user or unassigned: continue the work. Done or Closed: treat it as a repeat bug, and `reproduce` checks the history. Assigned to someone else: stop and say so. Never take another person's ticket.
+- Status: To Do or Backlog moves to In Progress. In Progress or Code Review, assigned to the user or unassigned: continue the work. A ticket with a merged PR and a newer QA comment saying it still fails: the `qa-return` track. Done or Closed: treat it as a repeat bug, and `reproduce` checks the history. Assigned to someone else: stop and say so. Never take another person's ticket.
+- The one question: a track skill asks the `agents-first` agent-plan question once, at its start. `full-send`, "don't ask", or an agent count in the call skips it, and the recommended plan runs.
 
 Autopilot stops, and asks or reports, in only these cases:
 
@@ -193,12 +197,14 @@ Use absolute paths and `git -C <path>` everywhere. The shell resets its folder b
 Use sub-agents freely. Research, review and building all go faster and deeper with one agent per independent piece.
 
 - Every sub-agent is Claude Sonnet 5.5 at medium effort, through `delegate_task` with `target = {"providerInstanceId":"claudeAgent","model":"claude-sonnet-5-5","options":{"effort":"medium"}}`.
+- Read-only collection tracks that need no judgement (`history`, `code-<repo>`, `tests-data`) run on Claude Haiku 5.5 at medium effort, with the same target and `"model":"claude-haiku-5-5"`. If Haiku is not offered, use Sonnet. Jira tracks, design tracks, theory agents, reviewers and builders stay on Sonnet.
 - A bigger model needs the user's approval on a card that names the step, the model and the reason.
 - Read-only jobs (the four reviewers and the history search) may go to Cursor with `target = {"providerInstanceId":"cursor","model":"auto-smart","options":{"optimize_for":"cost"}}`. This is the one approved exception. If a Cursor agent errors or hits a limit, run that job again on Sonnet.
 - Builders always run on Claude.
 - Every brief is clear and complete on its own: the goal, the paths to read, what the agent owns, what it must leave alone, where to write its result and how long the reply may be. Give file paths, not pasted text.
 - Reviewers read only the diff, the plan and the files the diff touches.
-- Read-only agents (research and review): one per track or question, all started at once. Builders: one per subpart, and every subpart in a batch at once, because they own separate files in the one worktree.
+- Read-only agents (research and review): one per track or question, all started at once. Builders: one per subpart, every subpart in a batch at once, each in its own slice worktree (`ship` step 1), and still owning separate files so the slices merge cleanly.
+- Which approach to use (subagents, an agent team for competing theories, a workflow for a very large feature) follows the `agents-*` skills. The track skill names the recommended plan.
 - Jira and Confluence research needs the Atlassian tools, so those tracks go to Claude children. If a child reports that it has no Jira tools, do that track in the main chat.
 - Never poll agents. Start them, then end the turn. Their completion wakes the chat. PR and CI watching follows the `babysit` skill.
 - Replace a failed agent once with a fresh agent plus a 5-line note on what failed and what is done. A second failure on the same piece stops the work and asks the user.
@@ -312,7 +318,8 @@ One folder per task, one worktree per repo inside it, all on the same branch nam
 ```
 
 - `blueprint` makes the folder first, and makes it the first thing its plan lists. It adds a worktree for each repo it needs, and when the research shows another repo is needed it adds that one to the same folder.
-- `ship`, `inspect`, `lane`, `proof` and `babysit` work only in that folder. They never create a worktree or a branch of their own.
+- `ship`, `inspect`, `lane`, `proof` and `babysit` work only in that folder. They never create a worktree or a branch of their own, except the builders' slice worktrees, which `ship` makes with `worktree.sh slice` and merges back with `worktree.sh slice-done`.
+- Slice worktrees sit in the task folder as `_<short>-<subpart>`, on branch `<branch>--<subpart>`. The leading underscore keeps `archive` from moving them. None may be left when the build ends.
 - Use `~/.agents/skills/blueprint/scripts/worktree.sh` (called `worktree.sh`): `add <root> <KEY> <short> <repo-path> <branch>`, `list <root> <KEY>`, and `archive <root> <KEY> --merged --scratch .scratch`.
 - A task started before this layout has its worktrees at `<root>/<repo>-worktrees/<KEY>`. Move each into the task folder with `git -C <repo> worktree move <old path> <root>/worktrees/<KEY>/<short>`, once, when the task is next picked up.
 - `babysit` moves the whole task folder to `<root>/archived-worktrees/<KEY>/` once every PR of the task is merged. It refuses while a worktree has uncommitted changes.

@@ -14,6 +14,7 @@ Folder: <root>/worktrees/<KEY>/
 | <repo> | <KEY>/<short> | <branch> | origin/<default branch> | created, clean, baseline run |
 A repo the plan needs that has no row here is added to this folder with worktree.sh before the plan is finished. Everyone works only in these worktrees.
 
+Track: bug               (bug, feature or qa-return, the same as the first line of <KEY>-ticket.md)
 Repeat bug: no            (yes when reproduce found earlier work. Then fill in the two sections below)
 Budget: <estimate or 4h>   Plan estimate: <hours>   Jira estimate: <hours or none>
 Repos: <repo list>

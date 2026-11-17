@@ -30,7 +30,7 @@ from pathlib import Path
 # Stage id, label shown in the table, default number of steps.
 STAGES = [
     ("blueprint", "blueprint: plan", 9),
-    ("repro", "reproduce: before proof", 6),
+    ("repro", "before proof (bug, feature or QA steps)", 6),
     ("ship-build", "ship: build", 4),
     ("inspect-interrogate", "inspect: reviewer interrogate", 3),
     ("inspect-postwork", "inspect: reviewer postwork", 3),

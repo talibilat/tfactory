@@ -8,6 +8,9 @@
 #   behind, clean          rebases the worktree onto origin/<default>
 #   behind, uncommitted    leaves it alone and says so (exit 1)
 #   rebase conflict        aborts the rebase and says so (exit 1)
+#   syncMode merge         a branch marked with `git config branch.<branch>.syncMode merge`
+#                          (qa-return sets it, because the branch was already pushed and merged)
+#                          gets `git merge origin/<default>` instead of a rebase, so no force-push
 #
 # DEFAULT_BRANCH=<name> overrides the branch. Never uses git stash.
 set -u
@@ -35,6 +38,17 @@ for wt in "$@"; do
   if [ -n "$(git -C "$wt" status --porcelain)" ]; then
     echo "$name: $behind commits behind origin/$base, but it has uncommitted changes, so I did not touch it"
     status=1
+    continue
+  fi
+  branch=$(git -C "$wt" branch --show-current)
+  if [ -n "$branch" ] && [ "$(git -C "$wt" config --get "branch.$branch.syncMode")" = merge ]; then
+    if git -C "$wt" merge -q --no-edit "origin/$base" >/dev/null 2>&1; then
+      echo "$name: was $behind commits behind origin/$base, merged (syncMode merge), now at $(git -C "$wt" rev-parse --short HEAD)"
+    else
+      git -C "$wt" merge --abort >/dev/null 2>&1
+      echo "$name: $behind commits behind origin/$base, and the merge has conflicts. Left as it was. Ask the user."
+      status=1
+    fi
     continue
   fi
   if git -C "$wt" rebase -q "origin/$base" >/dev/null 2>&1; then

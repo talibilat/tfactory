@@ -4,7 +4,8 @@
 #   <root>/worktrees/<KEY>/fe   <root>/worktrees/<KEY>/be   <root>/worktrees/<KEY>/ai ...
 #
 #   worktree.sh add     <root> <KEY> <short> <repo-path> <branch> [<base-branch>]
-#       make <root>/worktrees/<KEY>/<short> on <branch> (new from origin/<base>, or the existing branch)
+#       make <root>/worktrees/<KEY>/<short> on <branch>: the local branch when it exists, else
+#       origin/<branch> when it exists, else a new branch from origin/<base>
 #   worktree.sh list    <root> <KEY>
 #       show every worktree of the task: branch, clean or dirty, commits not pushed
 #   worktree.sh archive <root> <KEY> [--merged] [--scratch <dir>]
@@ -12,9 +13,17 @@
 #       has uncommitted changes or unpushed commits. --merged means the PR is merged, so the
 #       pushed check is skipped (the branch may be deleted on origin). --scratch copies the
 #       task files (<dir>/<KEY>-*) into the archive.
+#   worktree.sh slice   <root> <KEY> <short> <slice>
+#       make a private worktree for one builder: <root>/worktrees/<KEY>/_<short>-<slice> on branch
+#       <task-branch>--<slice>, from the task worktree's current commit. Links node_modules from
+#       the task worktree when package.json has no workspaces. Otherwise it says to install in the
+#       slice (Python always installs: an editable venv would test the task worktree's code).
+#   worktree.sh slice-done <root> <KEY> <short> <slice>
+#       merge the slice branch into the task worktree, then remove the slice worktree and branch.
+#       Refuses while either worktree has uncommitted changes. Stops on a merge conflict.
 #
 # Never uses git stash, rm or a force flag. Each worktree is moved with `git worktree move`, so git
-# keeps tracking it.
+# keeps tracking it. The only file it unlinks is the node_modules link that `slice` made.
 set -u
 
 die() { echo "$*" >&2; exit 1; }
@@ -53,6 +62,11 @@ case "$cmd" in
     mkdir -p "$root/worktrees/$key"
     if git -C "$repo" show-ref -q --verify "refs/heads/$branch"; then
       git -C "$repo" worktree add -q "$dest" "$branch" || die "could not add $dest on $branch"
+    elif git -C "$repo" show-ref -q --verify "refs/remotes/origin/$branch"; then
+      git -C "$repo" worktree add -q -b "$branch" "$dest" "origin/$branch" || die "could not add $dest from origin/$branch"
+      git -C "$dest" branch -q --set-upstream-to="origin/$branch"
+      echo "created $dest on $branch from origin/$branch"
+      exit 0
     else
       git -C "$repo" worktree add -q -b "$branch" "$dest" "origin/$base" || die "could not add $dest from origin/$base"
     fi
@@ -143,8 +157,62 @@ case "$cmd" in
     echo "archived $moved worktree(s) to $dest"
     ;;
 
+
+  slice)
+    [ $# -ge 4 ] || die "usage: worktree.sh slice <root> <KEY> <short> <slice>"
+    root=$1 key=$2 short=$3 slice=$4
+    case "$slice" in *[!A-Za-z0-9._-]*|"") die "slice name may use only letters, digits, dot, dash and underscore: $slice" ;; esac
+    task="$root/worktrees/$key/$short"
+    is_worktree "$task" || die "no task worktree at $task. Make it with worktree.sh add first"
+    branch=$(git -C "$task" branch --show-current)
+    [ -n "$branch" ] || die "$task is not on a branch"
+    dest="$root/worktrees/$key/_$short-$slice"
+    sbranch="$branch--$slice"
+    if [ -e "$dest" ]; then
+      echo "already there: $dest (branch $(git -C "$dest" branch --show-current 2>/dev/null))"
+      exit 0
+    fi
+    main=$(main_repo "$task") || die "cannot find the repo of $task"
+    git -C "$main" worktree add -q -b "$sbranch" "$dest" "$(git -C "$task" rev-parse HEAD)" \
+      || die "could not add $dest on $sbranch"
+    common=$(git -C "$task" rev-parse --path-format=absolute --git-common-dir)
+    echo "created $dest on $sbranch from $(git -C "$task" rev-parse --short HEAD)"
+    if [ -d "$task/node_modules" ] && [ -f "$task/package.json" ] && ! grep -q '"workspaces"' "$task/package.json"; then
+      ln -s "$task/node_modules" "$dest/node_modules"
+      if ! git -C "$dest" check-ignore -q node_modules; then
+        mkdir -p "$common/info"
+        grep -qx '/node_modules' "$common/info/exclude" 2>/dev/null || echo '/node_modules' >> "$common/info/exclude"
+      fi
+      echo "linked node_modules from the task worktree"
+    fi
+    for f in package.json pyproject.toml requirements.txt; do
+      [ -f "$dest/$f" ] && [ ! -e "$dest/node_modules" ] && { echo "install needed: run the install command from the conventions table in $dest"; break; }
+    done
+    ;;
+
+  slice-done)
+    [ $# -ge 4 ] || die "usage: worktree.sh slice-done <root> <KEY> <short> <slice>"
+    root=$1 key=$2 short=$3 slice=$4
+    task="$root/worktrees/$key/$short"
+    dest="$root/worktrees/$key/_$short-$slice"
+    is_worktree "$task" || die "no task worktree at $task"
+    is_worktree "$dest" || die "no slice worktree at $dest"
+    sbranch=$(git -C "$dest" branch --show-current)
+    [ -z "$(git -C "$dest" status --porcelain)" ] || die "$dest has uncommitted changes. Commit or revert them first"
+    [ -z "$(git -C "$task" status --porcelain)" ] || die "$task has uncommitted changes. Commit or revert them first"
+    if ! git -C "$task" merge -q --no-edit "$sbranch"; then
+      git -C "$task" merge --abort 2>/dev/null
+      die "merge conflict between $sbranch and the task branch. Two slices changed the same lines. Nothing was merged"
+    fi
+    [ -L "$dest/node_modules" ] && unlink "$dest/node_modules"
+    main=$(main_repo "$task") || die "cannot find the repo of $task"
+    git -C "$main" worktree remove "$dest" || die "merged, but could not remove $dest"
+    git -C "$task" branch -d -q "$sbranch" || die "merged, but could not delete branch $sbranch"
+    echo "merged $sbranch into $(git -C "$task" branch --show-current) and removed $dest"
+    ;;
+
   *)
-    sed -n '2,19p' "$0" | sed 's/^# \{0,1\}//'
+    sed -n '2,23p' "$0" | sed 's/^# \{0,1\}//'
     [ "$cmd" = help ] || exit 2
     ;;
 esac

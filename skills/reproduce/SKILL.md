@@ -27,7 +27,7 @@ Leave out `--key` when the task has no key. Tick each item when its Done conditi
 
 ## 1. Write the repro steps
 
-Read the ticket, its comments and attachments, and the chat. Write `.scratch/<KEY>-repro.md`. Its first line is the result, `Reproduced: not yet` for now. Steps 3 and 4 set it to `yes`, `no` or `already fixed`.
+Read the ticket, its comments and attachments, and the chat. When `qa-return` called you, the steps are QA's steps from `.scratch/<KEY>-qa-return.md`, the expected results come from the ticket's requirements, and the history is the ticket's own merged PRs. Write `.scratch/<KEY>-repro.md`. Its first line is the result, `Reproduced: not yet` for now. Steps 3 and 4 set it to `yes`, `no` or `already fixed`.
 
 ```
 Reproduced: not yet
@@ -50,7 +50,7 @@ Look for earlier work on this problem.
 
 Merge both into `.scratch/<KEY>-history.md`. With no earlier work, write "No earlier work found" and what you searched.
 
-When earlier work exists, this is a repeat bug. Pick one verdict and give the evidence in 3 lines or fewer: old fix incomplete, a later change broke it, different root cause, or never really fixed. If the old and new tickets have no link, add "Relates" with `createIssueLink`. If the old PR is still open, reuse its branch and rebase only after asking. If it is merged or closed, keep the new branch.
+When earlier work exists, this is a repeat bug. Pick one verdict and give the evidence in 3 lines or fewer: old fix incomplete, a later change broke it, different root cause, or never really fixed. If the old and new tickets have no link, add "Relates" with `createIssueLink`. If the old PR is still open, reuse its branch and rebase only after asking. If it is merged or closed, keep the new branch. When `qa-return` called you, the history is the ticket's own merged PRs: add no Jira link, and the branch stays the earlier one that `qa-return` restored.
 
 Done when `<KEY>-history.md` exists.
 

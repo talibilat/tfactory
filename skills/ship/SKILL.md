@@ -1,6 +1,6 @@
 ---
 name: ship
-description: Builds a planned task in its worktree with parallel sub-agents, calls inspect and loops on fixes until both are satisfied, captures the after proof with lane, opens the PR and updates Jira with before and after screenshots, then watches the PR until it is merged. Use when the user types ship, when blueprint hands off, or to build and ship a ticket or request. Plans first with blueprint when no plan exists.
+description: Builds a planned task with parallel sub-agents, each in its own slice worktree, calls inspect and loops on fixes until both are satisfied, captures the after proof with lane, opens the PR and updates Jira with before and after screenshots, then watches the PR until it is merged. Use when the user types ship, when blueprint hands off, or to build and ship a ticket or request. Plans first with blueprint when no plan exists.
 ---
 
 Never assume a requirement. Check Jira for the latest requirements before acting. If a requirement is unclear or cannot be verified, ask the user in plain language before proceeding with work that depends on it.
@@ -29,10 +29,13 @@ Leave out `--key` when the task has no key. Tick each item when its Done conditi
 
 1. Take the key from the call or from the chat. No key and plain instructions means standalone mode.
 2. Look for `.scratch/<KEY>-ticket.md`, `-plan.md`, `-decisions.md`, `-repro.md`, `-timeline.md`, the `before/` proof and the worktree.
-   - All present: this ran after `blueprint`. Reuse them.
-   - Plan missing: read `~/.agents/skills/blueprint/SKILL.md` and run it for this key up to the end of its step 8, then continue here.
-   - The task folder `<root>/worktrees/<KEY>/` and its worktrees are what `blueprint` made. Use exactly those. Run `~/.agents/skills/blueprint/scripts/worktree.sh list <root> <KEY>`: it must show a worktree for every repo in the plan's Task folder table. Never create a worktree or a branch of your own. A repo is missing: add it with `~/.agents/skills/blueprint/scripts/worktree.sh add`, install, and run its baseline. The folder was archived: move its worktrees back with the commands in its `archive.md`.
-3. For a bug, open `<KEY>-repro.md`. Its first line must be `Reproduced: yes`, its second line must name the live environment, and `before/` must hold the proof. Otherwise do not build: run `blueprint` for this key, which stops with a could-not-reproduce report when the bug will not reproduce.
+   - All present: this ran after a track skill. Reuse them.
+   - Plan missing: read `~/.agents/skills/blueprint/SKILL.md`, let its step 1 pick the track, and run only that track's steps up to and including its plan step. Its last step ("Build, check and ship") does not run now. Then continue here.
+   - The first line of `<KEY>-ticket.md` names the track (`Track: bug`, `feature` or `qa-return`). Read that track's skill (`fix-bug`, `build-feature` or `qa-return`). Its last step says what "done" means on this track and how close-out differs.
+   - The task folder `<root>/worktrees/<KEY>/` and its worktrees are what `blueprint` made. Use exactly those. Run `~/.agents/skills/blueprint/scripts/worktree.sh list <root> <KEY>`: it must show a worktree for every repo in the plan's Task folder table. Never create a task worktree or a branch of your own (the slice worktrees in step 1 are the one exception). A repo is missing: add it with `~/.agents/skills/blueprint/scripts/worktree.sh add`, install, and run its baseline. The folder was archived: move its worktrees back with the commands in its `archive.md`.
+3. Check the track's starting proof. Otherwise do not build, and run the track skill for this key instead:
+   - `bug` and `qa-return`: the first line of `<KEY>-repro.md` is `Reproduced: yes`, its second line names the live environment, and `before/` holds the proof. A `qa-return` also has line 1 of `<KEY>-qa-return.md` reading `Verdict: fix incomplete` or `Verdict: broken later`.
+   - `feature`: `<KEY>-acceptance.md` has a BA source on every row, and `before/` holds the proof of the current screen, or the board records why there is nothing to run.
 4. Check the plan against the requirement documents and the knowledge file. A plan written before a requirement changed is replanned first.
 5. Recap the plan in about 5 lines, then start building at once.
 
@@ -42,28 +45,43 @@ Done when the plan, the decision log, the before proof and the worktree are all 
 
 ## 1. Build
 
-Every builder works in the same worktree, so the briefs keep them apart.
+Every builder works in its own slice worktree, so parallel edits never collide. The briefs still give each builder separate files, so the slices merge cleanly.
 
 1. Read the plan's Subparts table. Order the subparts by dependency into batches. Subparts in one batch own separate files and run in parallel.
-2. Start one builder per subpart, as the Agents section of the conventions file says. Each brief is clear and complete on its own:
-   - the worktree path (`<root>/worktrees/<KEY>/<short>`), the plan path and the decision log path
+2. For each subpart in the batch, make its slice worktree from the task worktree's current commit:
+
+   ```
+   ~/.agents/skills/blueprint/scripts/worktree.sh slice <root> <KEY> <short> <subpart-id>
+   ```
+
+   It makes `<root>/worktrees/<KEY>/_<short>-<subpart-id>` on branch `<branch>--<subpart-id>`. It links `node_modules` from the task worktree when it can. When it prints "install needed", run the install command from the conventions table in the slice before the builder starts. Env files are not copied: a test that needs one runs in the task worktree after the merge. A subpart that spans repos gets one slice per repo.
+3. Start one builder per subpart, as the Agents section of the conventions file says. Each brief is clear and complete on its own:
+   - the slice worktree path, the plan path and the decision log path
    - the subpart id, what it must do, the files it owns, and the test that must pass
    - the checklist lines it covers
    - the do-not-touch list
-   - "Edit only your files. Do not commit or push. Do not run installs. If the plan is unclear or wrong, stop and say so instead of guessing. Report the files you changed and the test result in under 15 lines."
-3. End the turn. The completions wake the chat.
-4. After each batch, in the main chat:
-   - `git -C <wt> status --porcelain`. Every changed file must belong to a subpart in this batch. Revert or ask about anything else.
-   - Run the tests the subparts name.
-   - Commit one subpart at a time with the identity from the conventions file. Message: `<KEY>: <what changed>`.
-   - Tick "built" on the checklist lines that batch covers.
-5. Check the overrun rule at every batch boundary. Replace a failed builder once, then ask.
+   - "Work only in your slice worktree. Edit only your files. Do not commit or push. Do not run installs. If the plan is unclear or wrong, stop and say so instead of guessing. Report the files you changed and the test result in under 15 lines."
+4. End the turn. The completions wake the chat.
+5. After each batch, in the main chat, for each slice:
+   - `git -C <slice> status --porcelain`. Every changed file must belong to that subpart. Revert or ask about anything else.
+   - Run the tests the subpart names, in the slice.
+   - Commit in the slice with the identity from the conventions file. Message: `<KEY>: <what changed>`.
+   - Merge it back: `worktree.sh slice-done <root> <KEY> <short> <subpart-id>`. It merges the slice into the task branch and removes the slice worktree and branch. A merge conflict means two subparts touched the same lines: nothing is merged, so fix the plan's file ownership, then merge again.
+   - Tick "built" on the checklist lines that subpart covers.
+6. Run the batch's tests again in the task worktree, then start the next batch from the new commit.
+7. Check the overrun rule at every batch boundary. Replace a failed builder once, then ask.
 
-Done when every subpart is committed and every checklist line is ticked "built".
+A single subpart, or a fix of a few lines, may skip the slice and be built in the task worktree by one builder.
 
-## 2. Re-check the bug
+Done when every subpart is merged into the task branch, no slice worktree is left, and every checklist line is ticked "built".
 
-For a bug, run the repro test or script again. It must now pass. If it still fails, the build is not done. Go back to the plan, not to a guess.
+## 2. Re-check the starting point
+
+Run the track's own check. If it fails, the build is not done. Go back to the plan, not to a guess.
+
+- `bug`: the failing test from `reproduce` now passes.
+- `feature`: every row of `<KEY>-acceptance.md` has its test, and every one passes.
+- `qa-return`: the failing test made from QA's steps now passes, and the earlier PR's tests still pass.
 
 ## 3. Prove nothing else broke
 
@@ -121,7 +139,7 @@ Done when `gate after` prints `after gate: PASS` and every picture has been look
 
 ## 6. Close out
 
-Follow `references/closeout.md`. It ends only when the PR is merged. In order: publish the proof, push, open the PR with the before and after table, comment in Jira with the same proof and attach the screenshots, archive and delete the worktree, hand the PR to `babysit` (fix CI, resolve every comment), move the ticket to Code Review and log work, then stay until it merges. Keep Jira current at each milestone.
+Read the close-out notes in the track skill's last step first. They add to `references/closeout.md` (a QA return opens a new PR from the same branch, and tags nobody). Then follow `references/closeout.md`. It ends only when the PR is merged. In order: publish the proof, push, open the PR with the before and after table, comment in Jira with the same proof and attach the screenshots, archive and delete the worktree, hand the PR to `babysit` (fix CI, resolve every comment), move the ticket to Code Review and log work, then stay until it merges. Keep Jira current at each milestone.
 
 ## The annotated pair
 
@@ -140,7 +158,7 @@ No PR, no Jira comment, no Jira attachment and no ticket move until the before a
 ## Never
 
 - Never skip the requirement documents. Re-check them when the loop is stuck.
-- Never create a worktree or a branch. Work only in the task folder `blueprint` made.
+- Never create a worktree or a branch except slice worktrees through `worktree.sh slice`. Work only in the task folder `blueprint` made.
 - Never let a sub-agent commit or push.
 - Never edit outside the plan's files without a written reason.
 - Never run a bigger model without a card.

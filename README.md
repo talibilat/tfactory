@@ -12,11 +12,14 @@ The idea and the layout of this repo come from
 
 | Skill | Say | What it does |
 |---|---|---|
-| `full-send` | "full send PROJ-123" | Does everything below in one go with nobody watching, and stays on the PR until it is merged. |
-| `blueprint` | "blueprint" | Picks or takes a ticket, reproduces the bug, researches with many sub-agents, and writes a checked plan. Then explains in simple words what is wrong, why, and how it will be fixed. |
+| `full-send` | "full send PROJ-123" | Picks the track and does everything below in one go with nobody watching, and stays on the PR until it is merged. Add `as bug`, `as feature` or `as qa-return` to choose the track. |
+| `fix-bug` | "fix-bug PROJ-123" | The bug track. Reproduces the bug live, writes a failing test, finds the root cause, plans, builds and proves the fix. |
+| `build-feature` | "build-feature PROJ-123" | The feature track. Turns the BA's acceptance criteria into a checklist, captures the current screen, plans parallel slices, and proves every criterion with its own test and after picture. |
+| `qa-return` | "qa-return PROJ-123" | The QA return track. QA reopened a merged ticket: replays QA's exact steps on dev, decides why it failed, fixes it on a new PR from the same branch, and moves the ticket back to Code Review. |
+| `blueprint` | "blueprint" | The shared planning steps the three tracks use: picks or takes a ticket, researches with many sub-agents, and writes a checked plan. Typed alone, it picks the track. |
 | `reproduce` | (automatic) | Replays a bug step by step, saves the before screenshots and logs, writes a failing test and names the cause. No plan is made until the bug reproduces. If it will not, it says briefly why and how to get unblocked. |
 | `proof` | "proof" | Builds one annotated before and after picture per step: before on the left, after on the right, every change circled and numbered, what was asked written on it. Says NOT COMPLETE when the fix does not match the requirements. |
-| `ship` | "ship" | Builds the plan with parallel sub-agents in one worktree, loops with `inspect` until it passes, opens the PR and updates Jira. |
+| `ship` | "ship" | Builds the plan with parallel sub-agents, each in its own slice worktree, loops with `inspect` until it passes, opens the PR and updates Jira. |
 | `inspect` | "inspect" | Four code reviewers, a live run and a senior QA check of every acceptance criterion. Scores out of 100. |
 | `lane` | "lane" | A private running copy of the app per agent, for screenshots, API calls and logs. Aruva-specific. |
 | `babysit` | "babysit" | Watches a PR through CI and review, fixes real findings, resolves every comment, stays until merged. |
@@ -40,13 +43,20 @@ The idea and the layout of this repo come from
 
 ## How they fit together
 
-The pipeline, in order. `full-send` runs the whole chain.
+The pipeline, in order. `full-send` runs the whole chain. Each track has its own start and its own definition of done, then they share the same build, check and close-out.
 
 ```mermaid
 flowchart LR
-  P[blueprint<br>plan] --> R[reproduce<br>before proof] --> P
-  R --> F1[proof<br>before half]
-  P --> S[ship<br>build]
+  T{track} -- bug --> FB[fix-bug<br>reproduce, failing test, cause]
+  T -- feature --> BF[build-feature<br>acceptance checklist, before pictures]
+  T -- QA reopened --> QR[qa-return<br>replay QA's steps, verdict]
+  FB --> P[blueprint<br>research and plan]
+  BF --> P
+  QR --> P
+  FB --> F1[proof<br>before half]
+  QR --> F1
+  BF --> F1
+  P --> S[ship<br>build, one slice worktree per builder]
   S --> Q[inspect<br>4 reviewers + live QA]
   Q -- findings --> S
   Q -- score 100 --> L[lane<br>after proof]
@@ -56,7 +66,8 @@ flowchart LR
   C --> B[babysit<br>until merged]
 ```
 
-- `blueprint` uses `reproduce`, `ticket-prework-review` and `lane`.
+- `fix-bug`, `build-feature` and `qa-return` use `blueprint` and `agents-first`. `fix-bug` and `qa-return` use `reproduce`.
+- `blueprint` uses `ticket-prework-review` and `lane`.
 - `reproduce` and `ship` use `proof`. `proof` uses `lane`.
 - `inspect` uses `postwork` and `lane`.
 - Everything uses `unslop`.

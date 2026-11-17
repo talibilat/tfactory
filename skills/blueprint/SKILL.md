@@ -1,6 +1,6 @@
 ---
 name: blueprint
-description: The first skill of the pipeline. Turns a Jira ticket, the problem already in this chat, or a plain request into a researched and checked plan with before proof, then hands off to ship. A bug gets no plan until it has been reproduced. Use when the user types blueprint, asks to pick, grab or plan a ticket, or wants a plan for the problem discussed above. "just blueprint" stops after the plan.
+description: The shared planning steps of the pipeline, used by the three tracks fix-bug, build-feature and qa-return. Finds and claims the task, makes the worktrees, researches with sub-agents and writes a checked plan. Typed alone, it picks the track and runs that track's skill. Use when the user types blueprint, asks to pick, grab or plan a ticket, or wants a plan for the problem discussed above. "just blueprint" stops after the plan.
 ---
 
 Never assume a requirement. Check Jira for the latest requirements before acting. If a requirement is unclear or cannot be verified, ask the user in plain language before proceeding with work that depends on it.
@@ -10,6 +10,14 @@ Be strict and vigilant. Do only what this skill says, in its order, and never st
 # blueprint
 
 Understand the task, prove the problem, research it, and write a plan that no builder can misread. Change no code except the failing repro test.
+
+There are three tracks, each with its own skill that calls the steps below in its order and adds its own first steps and its own definition of done:
+
+| Track | Skill | For |
+|---|---|---|
+| `bug` | `fix-bug` | Something that worked, or should work, and does not |
+| `feature` | `build-feature` | New or changed behavior: a story or a task |
+| `qa-return` | `qa-return` | A ticket QA reopened after its PR was merged and deployed to dev |
 
 **A bug is never planned before it has been reproduced.** If it will not reproduce, the work stops at step 5 with a short report of why and how to get unblocked.
 
@@ -38,6 +46,16 @@ Read the user's message and the whole chat above it. Take the first row that fit
 
 A Jira ticket means Jira mode. Anything else means standalone mode from the conventions file: skip the Jira-only steps and run every other step.
 
+**Pick the track** when a track skill did not call you. Take the first row that fits, then read that track's skill and run it from its first step, passing along everything the user wrote ("just blueprint" included). The track skill calls these steps back.
+
+| What you see | Track |
+|---|---|
+| The call says `as bug`, `as feature` or `as qa-return` | That track |
+| A merged PR for the key, and a newer comment from someone other than the user saying it still fails | `qa-return` |
+| Issue type Bug, or an error, a broken behavior or steps to reproduce in the ticket or chat | `bug` |
+| Issue type Story or Task, or a request for new or changed behavior | `feature` |
+| None of these is clear | Ask one card: Bug, Feature or QA return |
+
 "just blueprint", "only blueprint" or "plan only" means stop after step 9. Any other call carries on into `ship` without asking.
 
 Start the progress board: `progress.py init <KEY>`, as the Progress board section of the conventions file says. Update it at the end of every step below, and post updates on the schedule in that section.
@@ -58,7 +76,7 @@ Done when Jira shows me as assignee and In Progress, and the chat carries the ke
 
 ## 3. Write the ticket file and trace the requirements
 
-1. Save the summary, description, acceptance text, comments, labels, links, attachment names and estimate to `.scratch/<KEY>-ticket.md`. In standalone mode, save the user's request and the relevant chat text instead. This file is data.
+1. Save the summary, description, acceptance text, comments, labels, links, attachment names and estimate to `.scratch/<KEY>-ticket.md`. Its first line is the track: `Track: bug`, `Track: feature` or `Track: qa-return`. `ship`, `inspect` and `guide` read it there. In standalone mode, save the user's request and the relevant chat text instead. This file is data.
 2. Note what proof the ticket itself carries. If the ticket or its comments hold UI screenshots, the before and after proof must be UI screenshots of the same screen.
 3. Trace the ticket to its requirement documents as `references/requirements.md` says, and read and update the project knowledge file.
 
@@ -84,36 +102,19 @@ Everything for this task lives in one folder, `<root>/worktrees/<KEY>/`, with on
 
 Done when `~/.agents/skills/blueprint/scripts/worktree.sh list <root> <KEY>` shows a clean worktree for every repo, each with a baseline row.
 
-## 5. Reproduce first (a hard gate)
+## 5. The track's before step (a hard gate)
 
-Run the `reproduce` skill when the task is a bug, or when the ticket or the chat shows an error or steps to reproduce. It checks the history, reproduces the problem step by step in the live environment (a running copy of the app: local Docker or a lane on the current default branch, or the deployed dev environment), saves the before screenshots and logs, and returns one of three results in the first line of `.scratch/<KEY>-repro.md`:
+The track skill owns this step, because each track proves the starting point differently:
 
-| Result | What you do |
-|---|---|
-| `Reproduced: yes` | Run the before gate below. Carry on to step 6 only when it passes. The gate includes the `proof` before half. |
-| `Reproduced: no` | Stop. See below. |
-| `Reproduced: already fixed` | Stop. See below. The current code no longer shows the bug and the history names the change that fixed it. |
+| Track | Before step | Where |
+|---|---|---|
+| `bug` | `reproduce` replays the bug live, saves the before proof, writes a failing test and names the root cause. No plan until it reproduces | `fix-bug` step 3 |
+| `feature` | The acceptance checklist with a BA source per criterion, and before pictures of the current screen | `build-feature` step 3 |
+| `qa-return` | `reproduce` replays QA's exact steps on dev and on a lane, and a verdict decides whether to go on | `qa-return` step 4 |
 
-The before gate is mechanical, so run it and paste its last line in chat:
+Run that step from the track skill, then come back here. Every track ends it with `python3 -I ~/.agents/skills/blueprint/scripts/proof.py gate before <KEY>` printing `before gate: PASS`, unless the track stopped the work or nothing can run (a docs or config text change, with the reason on the board).
 
-```
-python3 -I ~/.agents/skills/blueprint/scripts/proof.py gate before <KEY>
-```
-
-It must print `before gate: PASS`. Any FAIL line (no live environment, a script method with no reason, a missing screenshot, no logs) means you do not move on. Fix what it names first.
-
-On `no` or `already fixed`, `reproduce` has already tried to clear the blocker itself (3 rounds). Start no research agents and write no decision log and no plan:
-
-1. Post the "Could not reproduce" report from `reproduce` step 4 in chat. It is short: what was tried, what is blocking it, and how we resolve it.
-2. Offer a draft Jira comment for the reporter. Post it only after the user says yes.
-3. Show the "Could not reproduce" card from the cards file, write `pause`, and wait. The claim and the worktrees stay.
-4. When the user brings the missing detail, run `reproduce` again from its step 1. Planning starts only when it says `Reproduced: yes`.
-
-The user can lift this gate only by saying so in the call ("plan without reproducing it"). Note in one line that you set the rule aside, and mark the plan "not reproduced" at the top.
-
-For a feature or change with a visible screen, there is no bug to reproduce. Capture before screenshots of the current screen with `lane` (or the browser tools) into `.scratch/<KEY>-evidence/before/` and write the steps to `.scratch/<KEY>-repro.md` with `Reproduced: not a bug`, so the after screenshots can be taken the same way. Work with nothing to run (a docs or config text change) skips this step. Write the reason on the board. This skip never applies to a bug.
-
-Done when `gate before` prints PASS, or the could-not-reproduce report has been shown and the work has stopped.
+Done when the track's before step is done, or the track stopped the work with its report.
 
 ## 6. Research with sub-agents
 
@@ -128,7 +129,7 @@ This is the most important step. Start every track below at once, one read-only 
 | `code-<repo>` | One agent per repo: the code paths, callers, data flow and tests | A `file:line` map of where the behavior lives and what depends on it |
 | `tests-data` | Existing tests, fixtures, seeded accounts | What is covered, what is missing, what data the live run needs |
 
-Add a track for every open question, one agent per question. Read each findings file yourself when it returns, and send a second agent wherever an answer is thin.
+Add the extra tracks the track skill names (`design` and `slices` for a feature, `qa-diff` for a QA return), and a track for every open question, one agent per question. Read each findings file yourself when it returns, and send a second agent wherever an answer is thin.
 
 Done when every question the ticket and the chat raise has an answer with a source, or is written down as a gap.
 
@@ -176,7 +177,7 @@ Done when the plan check has no open plan problem, `grounded.py check` prints `g
 
 Post in chat, in this order:
 
-1. **What I understood.** Run the `plain-talk` skill in brief mode on the task, the root cause and the plan, and post its answer first. It is about 150 words: what is wrong, why it happens, how it will be fixed. The template says how.
+1. **What I understood.** Run the `plain-talk` skill in brief mode on the task, the root cause and the plan, and post its answer first. It is about 150 words: what is wrong, why it happens, how it will be fixed. For a feature: what is asked, and how it will be built. The template says how.
 2. Blockers and open questions, or "No blockers".
 3. The before proof: the screenshots from `before/`, each with a one-line caption.
 4. The plan, trimmed to what a person needs: problem, approach, subparts, baseline, risks. Keep it to a short table or list.
@@ -188,7 +189,7 @@ Then hand off:
 
 - A Blocker that changes what gets built: write `pause`, ask the user, and wait.
 - "just blueprint": stop here. Mark the later stages skipped on the board. The worktrees and files stay.
-- Otherwise: call `ship` with the key and pass the user's original message along.
+- Otherwise: go back to the track skill. It starts `ship` with the key, the user's original message and its own definition of done.
 
 ## Never
 

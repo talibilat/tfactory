@@ -1,6 +1,6 @@
 ---
 name: guide
-description: The guide to the tstack skills (full-send, blueprint, reproduce, proof, ship, inspect, lane, babysit, council, modernize, explain-jira, explain-pr, unslop). Says when and how to use each one, and from the middle of any chat says where the work stands and what to do next. Also lists every skill installed on this machine. Use when the user types guide, asks what to do next, which skill fits, how a skill works, or which skills exist.
+description: The guide to the tstack skills (full-send, fix-bug, build-feature, qa-return, blueprint, reproduce, proof, ship, inspect, lane, babysit, council, modernize, explain-jira, explain-pr, unslop, agents-first). Says when and how to use each one, and from the middle of any chat says where the work stands and what to do next. Also lists every skill installed on this machine. Use when the user types guide, asks what to do next, which skill fits, how a skill works, or which skills exist.
 ---
 
 Never assume a requirement. Check Jira for the latest requirements before acting. If a requirement is unclear or cannot be verified, ask the user in plain language before proceeding with work that depends on it.
@@ -29,11 +29,13 @@ It deletes itself when the last item is ticked. See "To-do lists" in the convent
 
 | What exists | The work is at | Type next |
 |---|---|---|
-| Nothing, empty chat | The start | `full send PROJ-123` to do everything in one go. Or `blueprint`, `blueprint PROJ-123`, or `blueprint` followed by the problem in your own words |
-| A problem or error in the chat, no files | The start, with the task already described | `blueprint` (it takes the problem above as the task) |
-| `-ticket.md`, no `-repro.md`, and it is a bug | `blueprint` before the reproduce step | `blueprint <KEY>` to resume |
-| `-repro.md` says `Reproduced: no` or `already fixed` | Stopped at the reproduce gate, no plan on purpose | Read the could-not-reproduce report, give the missing detail, then `blueprint <KEY>` |
-| `-repro.md` says `Reproduced: yes` and `before/` proof, no `-plan.md` | `blueprint` research and planning | `blueprint <KEY>` to resume |
+| Nothing, empty chat | The start | `full send PROJ-123` to do everything in one go. Or the track: `fix-bug PROJ-123`, `build-feature PROJ-123`, `qa-return PROJ-123`. `blueprint PROJ-123` picks the track for you |
+| A problem or error in the chat, no files | The start, with the task already described | `fix-bug` for a bug, `build-feature` for new behavior (each takes the problem above as the task) |
+| QA reopened a merged ticket | The QA return track | `qa-return PROJ-123`, or `qa-return PROJ-123 <comment link>` |
+| `-ticket.md`, no `-repro.md` | The track's before step | The track skill on the ticket file's first line, with the key, to resume |
+| `-repro.md` says `Reproduced: no` or `already fixed` | Stopped at the reproduce gate, no plan on purpose | Read the could-not-reproduce report, give the missing detail, then the track skill with the key |
+| `-qa-return.md` verdict is `not deployed`, `new scope` or `not reproduced` | A QA return stopped on purpose, with a draft for you | Read the draft, say yes to post or create it, or give the missing detail |
+| `-repro.md` says `Reproduced: yes` or `not a bug` and `before/` proof, no `-plan.md` | Research and planning | The track skill with the key, to resume |
 | `-plan.md`, no build commits in the worktree | Planned, ready to build | `ship <KEY>` |
 | Build commits, no `-reviews.md` | Built, not checked | `ship <KEY>` (it calls `inspect`) |
 | `-reviews.md` below 100, or a live run FAIL | In the fix loop | `ship <KEY>` to run the next round |
@@ -54,10 +56,13 @@ Show this table, then one line on how the stages follow each other. The order an
 | Skill | When to use it | How to use it | What you get |
 |---|---|---|---|
 | `full-send` | You want the whole job done while you are away | `full send PROJ-123`, or `full send` under a problem in the chat | Every stage below in order, with no questions, and the chat stays on the PR until it is merged |
-| `blueprint` | Always first. A new ticket, a bug, an error in the chat, or any request | `blueprint` alone in an empty chat asks 1 to 4 short questions (random or specific ticket, then priority, epic, ticket). `blueprint PROJ-123` asks nothing. `blueprint` under a problem in the chat plans that problem. `just blueprint` stops after the plan | A claimed ticket, a worktree, before proof, research from many sub-agents, a decision log backed by BA words, a Jira-only grilling of the plan, a checked plan with a checklist |
+| `fix-bug` | A bug: something that worked, or should work, and does not | `fix-bug PROJ-123`, or `fix-bug` under an error in the chat. Add `plan only`, `build only`, `agents 3`, `no agents` | Reproduced bug, failing test, root cause, plan, build, before and after proof, PR |
+| `build-feature` | A story or task: new or changed behavior | `build-feature PROJ-123`, or `build-feature` with the idea in your own words | Acceptance checklist with BA quotes, before pictures, parallel slices, a test and an after picture per criterion, PR |
+| `qa-return` | QA reopened a ticket after its PR was merged and deployed to dev | `qa-return PROJ-123`, `qa-return PROJ-123 <comment link>`, or `qa-return <PR link>` | QA's steps replayed, a verdict, a fix on a new PR from the same branch, ticket back to Code Review |
+| `blueprint` | The shared planning steps the three tracks use. Typed alone, it picks the track | `blueprint` alone in an empty chat asks 1 to 4 short questions (random or specific ticket, then priority, epic, ticket). `blueprint PROJ-123` picks the track and starts it. `just blueprint` stops after the plan | A claimed ticket, a worktree, research from many sub-agents, a decision log backed by BA words, a Jira-only grilling of the plan, a checked plan with a checklist |
 | `reproduce` | `blueprint` calls it for every bug. Type it yourself to reproduce a bug or check one that came back | `reproduce PROJ-123` | Step by step repro on the current code, before screenshots and logs, a failing test, the root cause, and the history when it is a repeat. When it will not reproduce, a short report of why and how to get unblocked, and no plan |
 | `proof` | A bug needs a before and after picture. `reproduce` calls it for the left half, `ship` and `inspect` for the right half. Type it to check one yourself | `proof before KEY` or `proof after KEY` | One annotated picture per step: before left, after right, changes circled and numbered, what was asked written on it, and COMPLETE or NOT COMPLETE |
-| `ship` | After the plan. `blueprint` starts it by itself | `ship PROJ-123`. With no plan it runs `blueprint` first. adding "build only" builds without QA or a PR | Parallel builders in one worktree, the `inspect` loop until the score is 100, after proof, a PR and a Jira comment with before and after screenshots, then the PR watch until merge |
+| `ship` | After the plan. The track skill starts it by itself | `ship PROJ-123`. With no plan it runs the track first. Adding "build only" builds without QA or a PR | Parallel builders, each in its own slice worktree, the `inspect` loop until the score is 100, after proof, a PR and a Jira comment with before and after screenshots, then the PR watch until merge |
 | `inspect` | `ship` calls it after the build. Type it yourself to check any ticket, branch or PR | `inspect PROJ-123` | Four code reviewers, a live run, every acceptance criterion checked, a score out of 100 and a verdict |
 | `lane` | Whenever the app must run for real: before proof, live run, after proof. The other skills call it | `lane`, or let the pipeline call it | A private copy of Aruva per agent, UI screenshots, API transcripts and logs |
 | `babysit` | A PR is open and must reach merge. `ship` calls it | `babysit <PR link>` | Failed checks fixed, every comment answered and resolved, the branch kept up to date, until merged |
@@ -68,7 +73,7 @@ Show this table, then one line on how the stages follow each other. The order an
 | `unslop` | Always on. Every reply, plan, commit, PR and Jira comment goes through it | Nothing to type | Plain, short writing |
 | `plain-talk` | When a ticket, a result or a skill needs explaining in everyday words | `plain-talk PROJ-123`, `plain-talk ship` | A short story with a real-life example |
 
-The flow: `blueprint` plans and calls `reproduce` on the way. `ship` builds and calls `inspect`. The two loop until both are satisfied. `lane` runs the app for every live step. `ship` then opens the PR and updates Jira with the before and after proof, and `babysit` stays with the PR until it is merged. Updates (the progress table plus what was just fixed and why, in simple words) come every 10 minutes from 07:00 to 18:00, every hour until midnight, and not at all from midnight to 07:00, unless the user names another interval.
+The flow: the track skill (`fix-bug`, `build-feature` or `qa-return`) agrees the agent plan, takes the before proof its own way, and runs the shared `blueprint` steps to plan. `fix-bug` and `qa-return` call `reproduce` on the way. `ship` builds and calls `inspect`. The two loop until both are satisfied. `lane` runs the app for every live step. `ship` then opens the PR and updates Jira with the before and after proof, and `babysit` stays with the PR until it is merged. Updates (the progress table plus what was just fixed and why, in simple words) come every 10 minutes from 07:00 to 18:00, every hour until midnight, and not at all from midnight to 07:00, unless the user names another interval.
 
 ## Which skill for this
 
