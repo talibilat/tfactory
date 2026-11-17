@@ -68,7 +68,11 @@ Leave out `--key` when the task has no key. Tick each item when its Done conditi
 5. **Give the lane back.** Close every browser window and tab you opened. Run `lane down N` as soon as testing ends, also after a failure. It deletes the lane's containers, data, volumes and built images, and copies anything under the lane's `proof/` folder to `<LANES_HOME>/proofs/`.
    Done when `lane ls` no longer shows lane N.
 
+   Close the lane in each of these moments, without waiting to be asked: the after proof is saved and the proof gate passes, the PR is opened (babysit never needs the lane, and a fix that needs a retest gets a fresh `lane up`), the ticket is blocked or snoozed, the chat ends, or a test run fails and you stop. Before you end your turn, run `lane ls` and confirm none of your lanes is left. Never close a lane another chat owns, even if it looks idle.
+
 ## Rules
+
+- Lanes are cheap to rebuild and expensive to leave running (8 containers each). An idle lane is a bug: close it.
 
 - Work only in your own lane. Never run `docker compose` against the base stack (`qa-dev`) or another lane, and never edit the base stack's files.
 - Keep the lane while you test, and give it back as soon as you finish. Commands that use a lane reset its stale timer. `lane sweep` (dry run) and `lane sweep --yes` remove lanes untouched for `STALE_HOURS`.
