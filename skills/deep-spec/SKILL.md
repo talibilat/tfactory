@@ -60,7 +60,7 @@ Never accept "probably", "likely" or "should" from an agent as proof. Ask it for
 
 ## Hard decisions
 
-A hard decision always goes to the user, with the options, your recommendation and the proof for each option. It is never made by you or an agent, even when the answer looks obvious. A decision is hard when it does any of these:
+A hard decision always goes to the user, written as "Asking questions" says, with the options, your recommendation and the proof for each option. It is never made by you or an agent, even when the answer looks obvious. A decision is hard when it does any of these:
 
 - changes what the ticket or a sub-task asks for, or drops, merges or adds a sub-task
 - picks between two or more ways to build it (where the switch lives, a new class or an existing one, sync or async)
@@ -111,6 +111,30 @@ Ask in the step 1 card whether the user wants running updates. The default is no
 - **Yes:** also post a short update after every step: what was found, why it matters, what is next, and the to-do list.
 
 Either way, write in plain words as `unslop` says, explain anything technical with `plain-talk` in brief mode, and lead with what is waiting on the user.
+
+## Asking questions
+
+Every question to the user is written for someone who does not read code. This covers cards, grilling rounds and approval requests. A BA question in a Jira draft follows the same rules.
+
+1. **A little background first.** Two or three short sentences: what this part of the app does today, what the ticket wants, and why a choice is needed now.
+2. **The question in everyday words.** Name things the way a person sees them ("the upload button", "where the files are stored"), not by file, class or setting names. When a technical word must stay, say what it means right there.
+3. **Each option in one plain line,** with what it means for the people who use the app, and the risk or cost.
+4. **Your recommendation and why,** in one sentence. Mark it "(Recommended)" on a card.
+5. **The proof in brief,** such as "the ticket says so" or "today's code already works this way", with the exact `file:line` or Jira quote on a second line for anyone who wants it.
+
+Example:
+
+> **Background.** Today a teacher can save a course only when it has at least one chapter. The ticket asks for drafts, so a course can be saved half-finished. Nothing in the ticket says what students see for a draft.
+>
+> **Question.** Should students see a course while it is still a draft?
+> 1. No. Only the teacher sees drafts until they publish. Students never see a half-built course. (Recommended)
+> 2. Yes, marked "Draft". Students can look early, but they may see empty pages.
+>
+> **Why I recommend 1.** It keeps what students see today exactly the same.
+>
+> **Proof.** Today's course list for students shows only finished courses (`course.service.ts:88`).
+
+This example is only about how to ask. It says nothing about any real ticket.
 
 ## 1. Start
 
@@ -224,7 +248,7 @@ Light: do item 1, skip the panel (items 2 and 3), then grill the user (items 4 a
    - **A fact:** start a fact-finder agent per question with the Proof rules. Its answer goes through the same check as step 6 before it is used.
    - **The BA's:** what the product must do. It goes into the BA comment draft for step 10.
    - **The user's:** every hard decision, and every question about how to build, what to leave out and which risks to accept.
-4. **Grill the user** round by round, as the `grilling` skill says. Each question shows the options, your recommendation, the proof for it in one line, and what happens if the user picks differently. Ask only the questions whose facts are settled. Questions waiting on a fact-finder go in a later round.
+4. **Grill the user** round by round, as the `grilling` skill says, with every question written as "Asking questions" says. Each question shows the background, the options, your recommendation, the proof for it in one line, and what happens if the user picks differently. Ask only the questions whose facts are settled. Questions waiting on a fact-finder go in a later round.
 5. **Record every answer.** A yes or a changed answer becomes an `approvals.md` row with the user's exact words. An answer that changes an earlier decision updates the draft and may raise new questions for the next round.
 
 Done when every question (from the panel, or from the draft in light mode) is answered by the user with an approval id, waiting in a BA comment draft, or listed as open questions, and the user confirms you share the same understanding.
