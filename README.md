@@ -23,6 +23,7 @@ The idea and the layout of this repo come from
 | `inspect` | "inspect" | Four code reviewers, a live run and a senior QA check of every acceptance criterion. Scores out of 100. |
 | `lane` | "lane" | A private running copy of the app per agent, for screenshots, API calls and logs. Aruva-specific. |
 | `babysit` | "babysit" | Watches a PR through CI and review, fixes real findings, resolves every comment, stays until merged. |
+| `deep-spec` | "deep-spec PROJ-123" | Investigation only, no code. Checks the ticket's claims against the code, finds work already built or about to merge, reviews security and likely bugs, grills you and runs a council, then rewrites the spec. Posts to Jira only with your yes on the exact text. |
 | `council` | "council" | Gets a review from Grok, Claude Opus and GPT at medium effort, and loops until they agree. |
 | `modernize` | "modernize" | Rebases an old PR and decides if it should still exist. |
 | `explain-jira` | "explain-jira" + Jira link | Explains the ticket, what each person is asking, and what to do next. |
@@ -88,6 +89,7 @@ flowchart LR
     bp[babysit]
     mod[modernize]
     cou[council]
+    ds[deep-spec]
     explain-jira
     explain-pr
     guide
@@ -122,6 +124,9 @@ flowchart LR
   mod -.-> J
   cou -.->|read only| C
   cou -->|ask three models| M
+  ds -.->|read; post only with your yes| J
+  ds -.->|read PRs| G
+  ds -.->|read only| C
   explain-jira -.->|read only| J
   explain-pr -.->|read only| G
   guide -.->|read only| C
@@ -138,6 +143,7 @@ flowchart LR
 | `babysit` | Posts the review-fix and merge updates | Pushes fixes, replies, resolves threads | Fixes what CI and reviewers found | Reruns the live steps a fix touches | Merge, unless you asked in clear words |
 | `modernize` | Reads the ticket | Updates the PR's own branch after a rebase | Rebases | Reruns checks | Merge, close, widen the scope |
 | `council` | Nothing | Nothing | Reads only | Nothing | Edit anything |
+| `deep-spec` | Reads. Edits the description and posts comments only with your yes on the exact text | Reads PRs | Makes the task worktree, reads only | Nothing | Change code, claim or post without your yes |
 | `explain-jira` | Reads only | Nothing | Nothing | Nothing | Post without your yes |
 | `explain-pr` | Reads the ticket summary | Reads only | Nothing | Nothing | Post, resolve or push without your yes |
 | `guide` | Nothing | Nothing | Reads the task files | Nothing | Change anything |

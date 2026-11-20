@@ -1,6 +1,6 @@
 ---
 name: guide
-description: The guide to the tstack skills (full-send, fix-bug, build-feature, qa-return, blueprint, reproduce, proof, ship, inspect, lane, babysit, council, modernize, explain-jira, explain-pr, unslop, agents-first). Says when and how to use each one, and from the middle of any chat says where the work stands and what to do next. Also lists every skill installed on this machine. Use when the user types guide, asks what to do next, which skill fits, how a skill works, or which skills exist.
+description: The guide to the tstack skills (full-send, fix-bug, build-feature, qa-return, blueprint, reproduce, proof, ship, inspect, lane, babysit, council, deep-spec, modernize, explain-jira, explain-pr, unslop, agents-first). Says when and how to use each one, and from the middle of any chat says where the work stands and what to do next. Also lists every skill installed on this machine. Use when the user types guide, asks what to do next, which skill fits, how a skill works, or which skills exist.
 ---
 
 Never assume a requirement. Check Jira for the latest requirements before acting. If a requirement is unclear or cannot be verified, ask the user in plain language before proceeding with work that depends on it.
@@ -67,6 +67,7 @@ Show this table, then one line on how the stages follow each other. The order an
 | `lane` | Whenever the app must run for real: before proof, live run, after proof. The other skills call it | `lane`, or let the pipeline call it | A private copy of Aruva per agent, UI screenshots, API transcripts and logs |
 | `babysit` | A PR is open and must reach merge. `ship` calls it | `babysit <PR link>` | Failed checks fixed, every comment answered and resolved, the branch kept up to date, until merged |
 | `council` | A plan, a change or a decision deserves a second, third and fourth opinion | `council`, with the thing to review | Grok 4.7, Claude Opus 5.5 and GPT Sol at medium effort, scored out of 10, repeated until they agree |
+| `deep-spec` | A ticket needs a deep look and a rewritten spec before anyone builds it | `deep-spec PROJ-123`, plus any links with notes | Every ticket claim checked, work in flight found, security and bug review, grilling and a council, a spec where every line has a source. Jira changes only with your yes. Chat named `SPEC <KEY>` |
 | `modernize` | An old PR has fallen behind | `modernize <PR link>` | A verdict (MODERNIZE, REWORK or CLOSE) and a rebased branch when it should live |
 | `explain-jira` | Someone commented on a ticket and you want it explained | `explain-jira <Jira link>` | What the ticket is, what each person asks, what to do next. Chat named `JC <KEY>` |
 | `explain-pr` | A PR has review comments you want explained | `explain-pr <PR link>` | What the PR is for, what each reviewer asks and whether they are right, what to do next. Chat named `GC <KEY> #<PR>` |
