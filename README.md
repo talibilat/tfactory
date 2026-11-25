@@ -19,8 +19,8 @@ The idea and the layout of this repo come from
 | `blueprint` | "blueprint" | The shared planning steps the three tracks use: picks or takes a ticket, researches with many sub-agents, and writes a checked plan. Typed alone, it picks the track. |
 | `reproduce` | (automatic) | Replays a bug step by step, saves the before screenshots and logs, writes a failing test and names the cause. No plan is made until the bug reproduces. If it will not, it says briefly why and how to get unblocked. |
 | `proof` | "proof" | Builds one annotated before and after picture per step: before on the left, after on the right, every change circled and numbered, what was asked written on it. Says NOT COMPLETE when the fix does not match the requirements. |
-| `ship` | "ship" | Builds the plan with parallel sub-agents, each in its own slice worktree, loops with `inspect` until it passes, opens the PR and updates Jira. |
-| `inspect` | "inspect" | Four code reviewers, a live run and a senior QA check of every acceptance criterion. Scores out of 100. |
+| `ship` | "ship" | Builds the plan with parallel sub-agents, each in its own slice worktree, runs the crapper and mutator quality gates, loops with `inspect` until it passes, opens the PR and updates Jira. |
+| `inspect` | "inspect" | Four code reviewers, a live run and a senior QA check of every acceptance criterion. Scores out of 100. Reviewers also list edge cases, and any case Jira does not cover comes to you with a recommendation. |
 | `lane` | "lane" | A private running copy of the app per agent, for screenshots, API calls and logs. Aruva-specific. |
 | `babysit` | "babysit" | Watches a PR through CI and review, fixes real findings, resolves every comment, stays until merged. |
 | `deep-spec` | "deep-spec PROJ-123" | Investigation only, no code. Checks the ticket's claims against the code, finds work already built or about to merge, reviews security and likely bugs, grills you and runs a council, then rewrites the spec. Posts to Jira only with your yes on the exact text. |
@@ -42,6 +42,125 @@ The idea and the layout of this repo come from
 | `postwork` | (automatic) | Reviewer: checks finished work against its ticket. |
 | `ticket-prework-review` | (automatic) | Reviewer: checks a ticket and plan before building starts. |
 
+## The whole flow, for any stack
+
+The flow does not depend on a language. The gates run on Python, TypeScript, JavaScript, Java, Go, Rust and Clojure, and the rest only needs git, a test command and a running copy of the app.
+
+```mermaid
+flowchart TD
+  J[(Jira ticket)] --> BP[blueprint<br>claim, worktree, research, plan]
+  BP --> TR{track}
+  TR -- bug --> FB[fix-bug<br>reproduce live, failing test, root cause]
+  TR -- feature --> BF[build-feature<br>acceptance checklist, before picture]
+  TR -- QA reopened --> QR[qa-return<br>replay QA steps]
+  FB --> PB[proof<br>before half]
+  BF --> PB
+  QR --> PB
+  PB --> B[ship: build<br>parallel builders, one slice worktree each]
+  B --> BL[re-check start point<br>baseline no worse, scope clean]
+  BL --> G1{{Gate 1: crapper<br>complexity x missing coverage}}
+  G1 -- over 6 --> CL[cleaner agent<br>fresh context, max 3 rounds]
+  CL --> G1
+  G1 -- pass --> G2{{Gate 2: mutator<br>flip operators, rerun tests}}
+  G2 -- survivor --> HD[hardener agent<br>fresh context, max 3 rounds]
+  HD --> G2
+  G2 -- all killed --> IN[inspect<br>4 reviewers + live run + QA]
+  IN -- findings or live run fails --> FIX[fix round<br>max 5, then ask you]
+  FIX --> BL
+  IN -- weak test only --> HD
+  IN -- edge case not in Jira --> ED[you decide<br>table + recommendation]
+  ED -- handle it --> FIX
+  ED -- note on same ticket / ignore --> IN
+  IN -- needs BA input --> ASK[stop, ask you in plain words]
+  IN -- score 100, live run PASS, edge cases answered --> AP[proof<br>after half, lane]
+  AP -- NOT COMPLETE --> FIX
+  AP --> PR[PR + Jira comment<br>before and after pictures]
+  PR --> BB[babysit<br>CI, review comments]
+  BB --> M[merged]
+```
+
+| Stage | Who does it | What stops it |
+|---|---|---|
+| Plan | `blueprint` | A requirement that is not in Jira. It asks you. |
+| Build | `ship` builders, one worktree each | A plan that is wrong. The builder stops and says so. |
+| Gate 1 | `crapper`, then a cleaner | 3 rounds without a pass, then a card to you |
+| Gate 2 | `mutator`, then a hardener | 3 rounds without a pass, then a card to you |
+| Check | `inspect` | Score under 100, live run FAIL, or an unanswered edge case |
+| Close | `ship`, `babysit` | A proof that is NOT COMPLETE |
+
+## Quality gates: crapper and mutator
+
+Two tools that give a pass or a fail, so no agent has to judge code quality by feel. They are forks of Uncle Bob Martin's [crapper](https://github.com/unclebob/crapper) and [mutator](https://github.com/unclebob/mutator), described in [this interview](https://www.youtube.com/watch?v=zcLPGC-tvgk). Models drift on long rule documents, but a tool that exits non-zero does not.
+
+| Tool | Question it answers | Pass | Fail |
+|---|---|---|---|
+| `crapper` | Which changed functions are too complex and too little tested? CRAP = CC² x (1 - coverage)³ + CC | exit 0 | exit 2 when the worst score is above the limit (6) |
+| `mutator` | Do the tests notice when a line changes? It flips `==` to `!=`, `+` to `-`, and so on, and reruns the tests | exit 0, every mutant killed | exit 3, a mutant survived. Exit 2 means the baseline tests fail |
+
+The limit is 6, not the human-sized 4, because agents handle more branches per function than people do. Lower it for a repo with a written reason in the plan.
+
+A failing gate starts a short-lived agent with a fresh context and one job. A cleaner lowers the score. A hardener adds a test that kills the survivor. Each gate allows 3 rounds, then asks you. Full rules are in [skills/ship/references/quality-gates.md](skills/ship/references/quality-gates.md).
+
+### Edge cases
+
+Each of the four `inspect` reviewers also lists edge cases that could fail the PR, QA or the Jira acceptance criteria. A case Jira already covers becomes a normal finding. A case Jira does not cover comes to you:
+
+| # | Edge case | How it fails | In Jira? | Recommendation |
+|---|---|---|---|---|
+| 1 | ARPP-123: a teacher saves a course with no chapters | The page shows a blank error | Not found | Handle it in this PR, a 3-line check |
+| 2 | ARPP-123: two admins save at the same moment | The second save overwrites the first | Not found | Note on the same ticket, ship without it |
+
+You answer "Handle it in this PR", "Note on the same ticket" or "Ignore". The answer goes in the decision log in your words, and `inspect` does not pass while a case waits. No new ticket is ever created.
+
+## Examples
+
+Run a whole ticket with nobody watching:
+
+```text
+full send ARPP-123
+```
+
+Start with a plan only, then build later:
+
+```text
+blueprint ARPP-123, plan only
+ship ARPP-123
+```
+
+Check work somebody else built:
+
+```text
+inspect ARPP-123
+```
+
+Run the gates by hand on the files you changed. What you see for crapper, on the mutator repo itself without coverage:
+
+```text
+$ ~/.agents/tools/crapper/crapper --changed --threshold 6
+CRAP Report
+===========
+Languages: python
+
+Function       Namespace      CC   Cov%   CRAP
+------------------------------------------------
+parse_args     mutator.cli    30   N/A    N/A
+_select        mutator.engine  9   N/A    N/A
+```
+
+With coverage on, a function with CC 9 and 50% coverage scores 9 x 9 x 0.125 + 9 = 19.1, over the limit, so Gate 1 starts a cleaner. Without a coverage report the score is `N/A` and the limit cannot fail, so the gate tells you to rerun with coverage.
+
+What you see for mutator, listing the changes it would try without running tests:
+
+```text
+$ ~/.agents/tools/mutator/mutator --scan src/mutator/model.py
+Scan: 5 mutation sites in src/mutator/model.py
+  src/mutator/model.py:52 + -> -  [defn/score]
+  src/mutator/model.py:53 == -> !=  [defn/score]
+  src/mutator/model.py:55 / -> *  [defn/score]
+```
+
+A real run executes the tests once per site. If the tests still pass after `+ -> -`, that mutant survived, and the hardener writes a test that fails on it.
+
 ## How they fit together
 
 The pipeline, in order. `full-send` runs the whole chain. Each track has its own start and its own definition of done, then they share the same build, check and close-out.
@@ -58,8 +177,16 @@ flowchart LR
   QR --> F1
   BF --> F1
   P --> S[ship<br>build, one slice worktree per builder]
-  S --> Q[inspect<br>4 reviewers + live QA]
+  S --> G1[Gate 1 crapper<br>max CRAP 6]
+  G1 -- fail --> CL[cleaner agent]
+  CL --> G1
+  G1 --> G2[Gate 2 mutator<br>--changed]
+  G2 -- survivors --> HD[hardener agent]
+  HD --> G2
+  G2 --> Q[inspect<br>4 reviewers + live QA]
   Q -- findings --> S
+  Q -- edge case not in Jira --> U[you decide]
+  U --> S
   Q -- score 100 --> L[lane<br>after proof]
   L --> F2[proof<br>after half + check]
   F2 -- NOT COMPLETE --> S
@@ -178,6 +305,18 @@ cp -R tstack/skills/* ~/.codex/skills/    # Codex
 
 ## Setup
 
+Install the gate tools once. `mutator` expects `crapper` in a folder next to it.
+
+```bash
+mkdir -p ~/.agents/tools && cd ~/.agents/tools
+git clone https://github.com/talibilat-awtg/crapper
+git clone https://github.com/talibilat-awtg/mutator
+(cd crapper && uv venv --python 3.12 .venv && uv pip install -e . --python .venv/bin/python)
+(cd mutator && uv venv --python 3.12 .venv && uv pip install -e . --python .venv/bin/python)
+```
+
+Check them: `~/.agents/tools/crapper/crapper --help` and `~/.agents/tools/mutator/mutator --help` should both print usage.
+
 There is nothing to fill in before the first run. The skills ask for what they need, once:
 
 - **Jira and repos.** On first run, `blueprint` writes `skills/blueprint/references/setup.md` from your Jira and git tools and asks for the rest. Add your BA's name there.
@@ -188,6 +327,8 @@ There is nothing to fill in before the first run. The skills ask for what they n
 - An Atlassian Jira connector in your agent.
 - An authenticated [GitHub CLI](https://cli.github.com) (`gh`), and git.
 - `python3` for the progress board, the PR status script and the Jira upload.
+- [uv](https://docs.astral.sh/uv/) and Python 3.12 for the two gate tools.
+- A test command for each repo, with coverage turned on. Gate 1 needs a coverage report to score anything.
 - `council` needs sub-agents on other providers' models. T3 Code does this with `delegate_task`.
 - `lane` needs the local Aruva setup in `skills/lane/references/setup.md`.
 
