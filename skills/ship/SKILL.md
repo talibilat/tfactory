@@ -11,7 +11,7 @@ Be strict and vigilant. Do only what this skill says, in its order, and never st
 
 Turn a plan into a merged-quality PR. Work only inside the task's worktree. The user's message outranks everything here (see "Your message comes first" in the conventions file).
 
-First read `~/.agents/skills/blueprint/references/conventions.md`. Read `~/.agents/skills/inspect/SKILL.md` before step 4, and `references/closeout.md` before step 6. If you are not Claude Code inside T3, read the "Using these skills from another agent" table and swap the tools as it says.
+First read `~/.agents/skills/blueprint/references/conventions.md`. Read `references/quality-gates.md` before step 3, `~/.agents/skills/inspect/SKILL.md` before step 4, and `references/closeout.md` before step 6. If you are not Claude Code inside T3, read the "Using these skills from another agent" table and swap the tools as it says.
 
 Keep the user informed as the Progress board section of the conventions file says. Before each piece of work, record what you are fixing and why with `progress.py now`. Post an update (the table plus a few simple sentences: this part is fixed, this is why, now I am fixing that) whenever `progress.py due <KEY>` says "due".
 
@@ -83,13 +83,22 @@ Run the track's own check. If it fails, the build is not done. Go back to the pl
 - `feature`: every row of `<KEY>-acceptance.md` has its test, and every one passes.
 - `qa-return`: the failing test made from QA's steps now passes, and the earlier PR's tests still pass.
 
-## 3. Prove nothing else broke
+## 3. Prove nothing else broke, and run the quality gates
 
 Run the baseline commands again. Every command must do at least as well as the baseline, with no new failures. Then check scope:
 
 - `git -C <wt> diff --name-only origin/<default branch>...HEAD` lists only files the plan lists, plus the repro test.
 - Any extra file needs a written reason in the plan or gets reverted.
 - Lockfiles, dependency files, CI config and anything on the do-not-touch list stay unchanged unless a subpart lists them.
+
+Then run the two quality gates in `references/quality-gates.md`, in order:
+
+1. Gate 1, `crapper --changed --threshold 6`. A failure starts a cleaner, then the gate runs again.
+2. Gate 2, `mutator --changed`, only after Gate 1 passes. A survivor starts a hardener, then the gate runs again.
+
+Each gate allows 3 fix rounds. Record "crap" and "mutation" on the progress board and hand both lines to `inspect`. Skip a gate only when the user says so in the call, and write that in `<KEY>-reviews.md`.
+
+Done when the baseline is no worse, the scope check is clean, and both gates pass on the current commit.
 
 ## 4. inspect, and the loop
 
@@ -101,6 +110,7 @@ Follow `~/.agents/skills/inspect/SKILL.md` in pipeline mode. It runs the four co
 - live run PASS with proof for every step
 - QA verdict Done or Done with notes
 - every checklist line ticked "verified"
+- every edge case that Jira does not cover has the user's answer in the decision log
 
 Anything less is a failed round:
 
@@ -162,6 +172,8 @@ No PR, no Jira comment, no Jira attachment and no ticket move until the before a
 - Never let a sub-agent commit or push.
 - Never edit outside the plan's files without a written reason.
 - Never run a bigger model without a card.
+- Never start `inspect` before both quality gates pass or are skipped by the user.
+- Never run a full-repo mutation run inside this skill. Use `--changed`.
 - Never call the work done below 100, or without a live run PASS on the current commit.
 - Never open a PR or update Jira without the before and after comparison. Only the user can waive it, by saying "skip proof" in the call.
 - Never merge the PR yourself.

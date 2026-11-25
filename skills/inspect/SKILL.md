@@ -21,6 +21,8 @@ The gate has five checks. Each has its own row on the progress board.
 | Reviewer: thermo-nuclear | Strict maintainability | `references/review-loop.md` |
 | QA validation and live run | Every acceptance criterion, real scenarios in the running app, logs | Sections 2 to 5 below, `references/live-test.md` |
 
+All four reviewers also list edge cases that could fail the PR, QA or Jira acceptance. Edge cases that Jira does not cover come to the user, with a recommendation, before the gate can pass (see "Edge cases that Jira does not cover" in `references/review-loop.md`).
+
 ## To-do list
 
 Before the first step, make a temporary to-do list from this skill's steps, so nothing is forgotten:
@@ -55,7 +57,9 @@ Steps:
    Done when the review table and the combined score are in chat and in `<KEY>-reviews.md`.
 3. **QA validation.** Run sections 2 to 5 below, as one sub-agent in pipeline mode (the brief is in `references/review-loop.md`) or yourself when alone. It reuses the live run's proof for the same commit and runs the scenarios that proof did not cover.
    Done when the report exists at `.scratch/<KEY>-reviews/inspect-r<N>.md` with a verdict.
-4. **Give the result.** The gate passes only when the combined score is 100 with postwork PASS, the live run is PASS on the current commit, the QA verdict is Done or Done with notes, and every plan checklist line is ticked "verified". Otherwise list the failing items for `ship`, which fixes them and calls this skill again on the new commit.
+4. **Give the result.** The gate passes only when the combined score is 100 with postwork PASS, the live run is PASS on the current commit, the QA verdict is Done or Done with notes, and every plan checklist line is ticked "verified", and the user has answered every edge case. Otherwise list the failing items for `ship`, which fixes them and calls this skill again on the new commit.
+
+In pipeline mode, `ship` has already run the crapper and mutator gates (`ship/references/quality-gates.md`). Read their two board lines. Reviewers do not re-score complexity or test strength that a gate already passed. A reviewer who finds a weak test or a complex function still reports it, and `ship` sends it back through the gates.
 
 Update the board after each step: each reviewer row moves from started, to findings verified, to clean.
 

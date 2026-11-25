@@ -28,6 +28,9 @@ Read <the reviewer's SKILL.md path, found as above> and follow it, with these ov
 - Write your findings to <.scratch/<KEY>-reviews/<name>-r<N>.md> in this exact format, one row per finding:
   F<n> | Critical/High/Medium/Low | file:line | in-scope yes/no | claim | proof (command and output, or the exact lines) | smallest fix
 - A finding with no concrete failing case or proof is not a finding. Leave it out.
+- Also look for edge cases that could fail the PR, QA or the Jira acceptance criteria: empty or missing data, huge or odd input, permissions and roles, repeated or concurrent actions, old data, time zones, failure of a service this change calls, and anything the ticket's own words imply but do not state. Write each one in a second section of the same file, one row per edge case:
+  E<n> | High/Medium/Low | file:line or screen | in Jira yes/no (quote the ticket or decision line that covers it, or write "not found") | how it fails, with a concrete input | what you recommend
+  Edge cases are not findings and cost no points. Do not drop one only because the ticket is silent. A guess with no concrete input is not an edge case.
 - "in-scope yes" means the finding is on a changed line, or on code this change breaks.
 - Reply with the file path, the number of findings, and one line for the verdict. Nothing else.
 For postwork also include its score out of 100 and its PASS, PASS WITH MANUAL CHECKS or FAIL gate.
@@ -43,12 +46,31 @@ After the reviewers return, run `git -C <wt> status --porcelain` and compare it 
 4. Score starts at 100. For each verified in-scope finding subtract 25 (Critical), 10 (High), 5 (Medium) or 2 (Low). Never go below 0.
 5. 100 means no verified in-scope findings and postwork says PASS. PASS WITH MANUAL CHECKS counts as not passed until the manual checks are done and recorded. The live test is a gate, not points. Without a PASS in `<KEY>-live-test.md` for the current commit, the result is NOT PASSED, whatever the score.
 
+6. **Edge cases.** Merge the E rows from the four files and from the QA validation. Check each against the ticket, `<KEY>-acceptance.md`, the plan and the decision log. A case the Jira text already covers goes to the fix plan as a normal finding if the code misses it. A case the Jira text does not cover goes to the user, as the next section says.
+
 Show this table in chat and append it to `.scratch/<KEY>-reviews.md`:
 
 | Reviewer | Findings | Verified in scope | Dropped | Follow-ups | Gate |
 |---|---|---|---|---|---|
 
 Then: `Combined score: <n>/100`, the postwork score and gate on one line, and `Live test: PASS | FAIL | NOT RUN (commit <sha>)`.
+
+## Edge cases that Jira does not cover
+
+Never decide these yourself. A requirement that is not in Jira is the user's call.
+
+1. Show one table in chat, worst first, in plain words:
+
+   | # | Edge case (what a person would do) | How it fails | In Jira? | My recommendation | Cost to handle |
+   |---|---|---|---|---|---|
+
+   Give a real example for each, with the ticket key: "For ARPP-123, a teacher saves a course with no chapters and the page shows a blank error."
+2. Ask the user for an opinion with one card per case, or one card with a list when there are more than four. Options: "Handle it in this PR (Recommended)" when the failure is likely or serious, "Add a note to the same ticket and ship without it", "Ignore, with the reason". Put your recommendation first and say why in one sentence. Never create a new ticket. A follow-up goes as a comment on the same ticket.
+3. Wait for the answer. Meanwhile finish every check that does not depend on it.
+4. Write each decision, with the user's words, into `<KEY>-decisions.md`. "Handle it" goes into the phase 2 plan with a checklist line and a test. "Note on the ticket" goes into the Jira comment and the PR body. "Ignore" is recorded and not raised again for this ticket.
+5. A case the user already decided in an earlier round is not asked again.
+
+The gate in `inspect` does not pass while an edge case is waiting for an answer.
 
 ## QA validation (after the code reviewers pass)
 
