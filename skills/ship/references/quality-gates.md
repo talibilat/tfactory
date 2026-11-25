@@ -1,29 +1,20 @@
 # Quality gates
 
-Two tool checks that run in `ship` step 3, before `inspect`. They give a pass or a fail, so no agent has to judge them. Both tools are our forks of Uncle Bob's crapper and mutator, cloned at `~/.agents/tools/crapper` and `~/.agents/tools/mutator`. mutator expects crapper next to it, so keep both folders side by side.
+Two tool checks run in `ship` step 3, before `inspect`. Each gives a pass or a fail, so no agent judges them. Both tools are our forks of Uncle Bob's crapper and mutator, bundled in `~/.agents/skills/ship/scripts/vendor/`. `make install` in the tstack checkout installs them. Run them through `~/.agents/skills/ship/scripts/quality`, written `quality` below.
 
-Run each tool from the task worktree root of the repo that changed. A task with several repos runs the gates once per changed repo.
-
-## Setup on a new machine
-
-```
-git clone https://github.com/talibilat-awtg/crapper ~/.agents/tools/crapper
-git clone https://github.com/talibilat-awtg/mutator ~/.agents/tools/mutator
-cd ~/.agents/tools/crapper && uv venv --python 3.12 .venv && uv pip install -e . --python .venv/bin/python
-cd ~/.agents/tools/mutator && uv venv --python 3.12 .venv && uv pip install -e . --python .venv/bin/python
-```
+Run each tool from the task worktree root of the repo that changed. A task with several repos runs the gates once per changed repo. Always pass `--base origin/<default branch>`, so the gates check committed work as well as local edits.
 
 ## Gate 1: crapper (complexity and coverage)
 
 ```
-~/.agents/tools/crapper/crapper --changed --threshold 6
+~/.agents/skills/ship/scripts/quality crapper --changed --base origin/<default branch> --threshold 6
 ```
 
 - Exit 0: pass.
 - Exit 2: some changed function scores above 6. Start a cleaner.
 - Exit 0 with `--no-coverage` output only: the repo has no coverage report. Run its baseline test command with coverage on, then run the gate again. Never pass the gate on complexity alone without saying so on the board.
 
-The limit is 6 because agents handle more branches per function than people do. Lower it for a repo only with a written reason in the plan.
+Lower the limit for a repo only with a written reason in the plan.
 
 ### Cleaner
 
@@ -39,18 +30,18 @@ Then commit with `<KEY>: <what changed>` and run Gate 1 again. Up to 3 cleaner r
 Runs only after Gate 1 passes.
 
 ```
-~/.agents/tools/mutator/mutator --changed
+~/.agents/skills/ship/scripts/quality mutator --changed --base origin/<default branch>
 ```
 
 - Exit 0: every mutant was killed. Pass.
-- Exit 3: at least one mutant survived. The tests do not notice that change. Start a hardener.
+- Exit 3: at least one mutant survived (the tests miss that change). Start a hardener.
 - Exit 2: the baseline tests fail. This is a failed build, not a mutation result. Go back to step 2.
 
-`--changed` runs only the git additions and edits. It never runs the whole repo. A full run is for a nightly job, never inside `ship`.
+`--changed --base` runs only the lines added or edited since the base branch. Never run the whole repo inside `ship`. A full run is for a nightly job.
 
 ### Hardener
 
-A fresh sub-agent. Brief:
+A fresh sub-agent that follows the `hardening` skill (`~/.agents/skills/hardening/SKILL.md`). Brief:
 
 - the task worktree path and the survivor list (file, line, the change that survived)
 - "For each survivor, add or strengthen a test so it fails when that line changes. Edit only test files, unless the survivor shows dead code, then say so and stop. Do not commit or push. Report the survivors you killed in under 10 lines."

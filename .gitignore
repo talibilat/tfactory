@@ -2,5 +2,8 @@ skills/blueprint/references/setup.md
 skills/inspect/references/setup.md
 node_modules/
 __pycache__/
+.venv/
+*.egg-info/
 skills/postwork/references/matt-code-review.md
 .scratch/
+.metrics/

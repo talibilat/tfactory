@@ -10,23 +10,22 @@ Each step below is on the conventions file's "Never ask" list, so none of them n
 
 Stop here unless every `compare/` image was opened and looked at (not just gated), shows the bug before and the fix after, and is a valid image. After each upload to GitHub or Jira, open the uploaded image and confirm it renders. Never open the PR or comment on Jira first. See the Proof gate in `ship`. The PR table and the Jira comment use the annotated pair from the `proof` skill: before left, after right, every change circled and numbered, a caption with what is being looked at and what was asked, and a verdict. A `proof` result of NOT COMPLETE stops the close out.
 
-
 Evidence is in `.scratch/<KEY>-evidence/`: `before/`, `after/` under the same file names, `compare/` with the side-by-side images, and the logs. Run `python3 -I ~/.agents/skills/blueprint/scripts/proof.py gate after <KEY>` again on the final commit. If it does not print PASS, go back to step 5 of the skill. Never open a PR without the comparison.
 
-Publish the images on an evidence branch. It shares no history with the code, so it can never be merged by accident.
+Publish the images on an evidence branch. It shares no history with the code, so it cannot be merged by accident.
 
 1. `git -C <repo> worktree add --orphan -b evidence/<KEY> <root>/worktrees/<KEY>/_evidence-<short>` (the leading underscore keeps the archive step from moving it)
 2. In that folder: `mkdir -p <KEY>/before <KEY>/after <KEY>/compare`, copy the images in, then `git add -A` and commit with the identity from `setup.md`.
 3. `git push -u origin evidence/<KEY>`, then `git worktree remove` the folder.
 4. Image links look like `https://github.com/<org>/<repo>/blob/evidence/<KEY>/<KEY>/compare/<file>?raw=true`, and the same under `before/` and `after/`.
 
-If the push is rejected, keep the images in `.scratch/<KEY>-evidence/` and tell the user which folder holds them. The comparison still goes to the PR and Jira some other way: ask the user, and do not carry on without it. Remove secrets, tokens, emails and personal data from every image before it leaves the machine.
+If the push is rejected, keep the images in `.scratch/<KEY>-evidence/` and tell the user which folder holds them. The comparison must still reach the PR and Jira. Ask the user how, and do not carry on without it. Remove secrets, tokens, emails and personal data from every image before it leaves the machine.
 
 ## 1. Push and open the PR
 
 1. `gh auth status`. Switch to the GitHub account in `setup.md` if needed.
 2. `git -C <wt> push -u origin <branch>`. Never force.
-3. Write the PR body to `.scratch/<KEY>-pr.md`, then `gh pr create -R <org>/<repo> --base <default branch> --head <branch> --title "[<KEY>]: <lowercase imperative summary>" --body-file .scratch/<KEY>-pr.md`. The PR is ready for review, not a draft. One PR per repo.
+3. Write the PR body to `.scratch/<KEY>-pr.md`, then `gh pr create -R <org>/<repo> --base <default branch> --head <branch> --title "[<KEY>]: <lowercase imperative summary>" --body-file .scratch/<KEY>-pr.md`. The PR is ready for review, not a draft. Open one PR per repo.
 4. Call `link_pull_request` with the full URL.
 5. Write `pr-opened` to the timeline.
 
@@ -57,7 +56,7 @@ PR body headings:
 <Old ticket key, old PR number, and why it came back.>
 ```
 
-If the repo has a `.github/pull_request_template.md`, fill that instead and keep the Jira link, the proof section and the review scores.
+If the repo has a `.github/pull_request_template.md`, fill that instead. Keep the Jira link, the proof section and the review scores.
 
 ## 2. Comment in Jira
 
@@ -81,13 +80,13 @@ Then attach the files to the ticket itself. This is required:
 python3 -I ~/.agents/skills/blueprint/scripts/proof.py attach <KEY>
 ```
 
-It uploads every comparison image, and the logs as `before-<name>` and `after-<name>`, and skips what is already there. It uses the Jira token saved on this machine. If the token file is missing, ask for the token once as the Jira token section of the conventions file says, then run it again. Without a token, copy `compare/`, `before/` and `after/` to `~/Desktop/<KEY>/` and tell the user the folder is ready to drag in. Treat the step as not done until the user confirms.
+It uploads every comparison image and the logs as `before-<name>` and `after-<name>`, and skips what is already there. It uses the Jira token saved on this machine. If the token file is missing, ask for the token once as the Jira token section of the conventions file says, then run it again. Without a token, copy `compare/`, `before/` and `after/` to `~/Desktop/<KEY>/` and tell the user the folder is ready to drag in. The step is not done until the user confirms.
 
 If the ticket's own report used UI screenshots, the comment's images are UI screenshots of the same screens.
 
 ## 3. Keep the task folder
 
-Do not archive, move or delete anything here. The worktrees stay in `<root>/worktrees/<KEY>/`, because `babysit` needs them to fix CI and answer comments. `babysit` archives the whole task folder after every PR of the task is merged.
+Do not archive, move or delete anything here. The worktrees stay in `<root>/worktrees/<KEY>/` because `babysit` needs them to fix CI and answer comments. `babysit` archives the whole task folder after every PR of the task is merged.
 
 ## 4. Babysit the PR
 
@@ -97,7 +96,7 @@ Follow the `babysit` skill for every PR: look at it now, wait with one watcher, 
 
 The PR is good when CI passed, there are no conflicts, `unresolved_count` is 0 and no new comment is unhandled. Human approval is not required for this step.
 
-Before the ticket moves, run the publish check. It reads Jira and every PR and fails when the comparison images are not on the ticket or not shown in a PR description:
+Before the ticket moves, run the publish check. It reads Jira and every PR and fails when the comparison images are not on the ticket or not in a PR description:
 
 ```
 python3 -I ~/.agents/skills/blueprint/scripts/proof.py verify <KEY> --pr <org>/<repo>#<number>
@@ -116,7 +115,7 @@ It must print `publish check: PASS`. Fix what it names, then run it again. Do no
 
 ## 6. Stay until merged
 
-Keep following `babysit` step 6 until GitHub reports the PR as merged. Time spent on review fixes after step 5 is logged as a second worklog when it adds up to more than 15 minutes. After the merge, post the last Jira update and set the `ship-merge` row to done. The chat is finished only then.
+Keep following `babysit` step 6 until GitHub reports the PR as merged. Log time spent on review fixes after step 5 as a second worklog when it adds up to more than 15 minutes. After the merge, post the last Jira update and set the `ship-merge` row to done. The chat is finished only then.
 
 ## Failure notes
 

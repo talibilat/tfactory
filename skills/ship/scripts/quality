@@ -1,0 +1,13 @@
+#!/usr/bin/env python3
+import os
+import sys
+from pathlib import Path
+
+
+if len(sys.argv) < 2 or sys.argv[1] not in {"crapper", "mutator"}:
+    raise SystemExit("Usage: quality crapper|mutator [options]")
+
+python = Path(__file__).resolve().parents[3] / ".venv/bin/python"
+if not python.is_file():
+    raise SystemExit("Run make install in the tstack checkout first.")
+os.execv(python, [str(python), "-I", "-m", *sys.argv[1:]])

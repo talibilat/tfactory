@@ -21,7 +21,8 @@ The idea and the layout of this repo come from
 | `proof` | "proof" | Builds one annotated before and after picture per step: before on the left, after on the right, every change circled and numbered, what was asked written on it. Says NOT COMPLETE when the fix does not match the requirements. |
 | `ship` | "ship" | Builds the plan with parallel sub-agents, each in its own slice worktree, runs the crapper and mutator quality gates, loops with `inspect` until it passes, opens the PR and updates Jira. |
 | `inspect` | "inspect" | Four code reviewers, a live run and a senior QA check of every acceptance criterion. Scores out of 100. Reviewers also list edge cases, and any case Jira does not cover comes to you with a recommendation. |
-| `lane` | "lane" | A private running copy of the app per agent, for screenshots, API calls and logs. Aruva-specific. |
+| `lane` | "lane" | A private running copy of the app per agent, for screenshots, API calls and logs. `lane compose` works for any Docker Compose project. Aruva has its own profile. |
+| `hardening` | "harden the tests" | Runs mutation testing on the change and adds tests for every change the suite misses. `ship` uses it for Gate 2. |
 | `babysit` | "babysit" | Watches a PR through CI and review, fixes real findings, resolves every comment, stays until merged. |
 | `deep-spec` | "deep-spec PROJ-123" | Investigation only, no code. Checks the ticket's claims against the code, finds work already built or about to merge, reviews security and likely bugs, grills you and runs a council, then rewrites the spec. Posts to Jira only with your yes on the exact text. |
 | `council` | "council" | Gets a review from Grok, Claude Opus and GPT at medium effort, and loops until they agree. |
@@ -136,7 +137,7 @@ inspect ARPP-123
 Run the gates by hand on the files you changed. What you see for crapper, on the mutator repo itself without coverage:
 
 ```text
-$ ~/.agents/tools/crapper/crapper --changed --threshold 6
+$ crapper --changed --base origin/main --threshold 6
 CRAP Report
 ===========
 Languages: python
@@ -152,7 +153,7 @@ With coverage on, a function with CC 9 and 50% coverage scores 9 x 9 x 0.125 + 9
 What you see for mutator, listing the changes it would try without running tests:
 
 ```text
-$ ~/.agents/tools/mutator/mutator --scan src/mutator/model.py
+$ mutator --scan src/mutator/model.py
 Scan: 5 mutation sites in src/mutator/model.py
   src/mutator/model.py:52 + -> -  [defn/score]
   src/mutator/model.py:53 == -> !=  [defn/score]
@@ -160,6 +161,27 @@ Scan: 5 mutation sites in src/mutator/model.py
 ```
 
 A real run executes the tests once per site. If the tests still pass after `+ -> -`, that mutant survived, and the hardener writes a test that fails on it.
+
+Run a private copy of any Docker Compose project, one per agent:
+
+```text
+$ lane compose up agent-one
+$ lane compose port agent-one web 80
+127.0.0.1:55006
+$ lane compose up agent-two
+$ lane compose port agent-two web 80
+127.0.0.1:55007
+$ lane compose down agent-one
+$ lane compose down agent-two
+```
+
+Each lane gets its own containers, network, volumes and port. Rules for the Compose file are in [skills/lane/references/compose.md](skills/lane/references/compose.md).
+
+Harden the tests for a branch by hand:
+
+```text
+$ harden origin/main --test-command "npm test"
+```
 
 ## How they fit together
 
@@ -291,31 +313,38 @@ Every skill stops and asks before these: a force-push or history rewrite, a data
 
 ## Install
 
-```bash
-npx skills@latest add talibilat/tstack -g
-```
-
-Or by hand:
+On a new laptop, one command installs every skill for Claude Code, Codex and Cursor, plus the tools the skills run:
 
 ```bash
-git clone https://github.com/talibilat/tstack
-cp -R tstack/skills/* ~/.claude/skills/   # Claude Code
-cp -R tstack/skills/* ~/.codex/skills/    # Codex
+git clone https://github.com/talibilat/tstack ~/Documents/Projects/tstack
+cd ~/Documents/Projects/tstack
+make install
+make check
 ```
+
+```mermaid
+flowchart LR
+  M[make install] --> V[.venv in the checkout<br>crapper, mutator, Pillow, tree-sitter]
+  M --> N[npm ci<br>lane browser scripts]
+  M --> S["~/.agents/skills/&lt;skill&gt;<br>link to the checkout"]
+  S --> C["~/.claude/skills"]
+  S --> X["~/.codex/skills"]
+  S --> R["~/.cursor/skills"]
+  M --> B["~/.local/bin<br>crapper, mutator, harden, lane"]
+```
+
+| What it installs | Where |
+|---|---|
+| Every skill, as a link to this checkout | `~/.agents/skills/`, then linked into `~/.claude/skills/`, `~/.codex/skills/` and `~/.cursor/skills/` |
+| crapper and mutator (bundled in `skills/ship/scripts/vendor/`) | `.venv/` inside the checkout |
+| The lane browser scripts | `skills/lane/scripts/node_modules/` |
+| Short commands `crapper`, `mutator`, `harden`, `lane` | `~/.local/bin/` (add it to PATH) |
+
+The skills are links, so a `git pull` updates every agent at once. Run `make install` again after a pull that changes `requirements.txt` or the bundled tools. An existing skill folder that is not a link to this checkout is left alone and reported.
+
+`make check` runs each tool once and fails if one is missing.
 
 ## Setup
-
-Install the gate tools once. `mutator` expects `crapper` in a folder next to it.
-
-```bash
-mkdir -p ~/.agents/tools && cd ~/.agents/tools
-git clone https://github.com/talibilat-awtg/crapper
-git clone https://github.com/talibilat-awtg/mutator
-(cd crapper && uv venv --python 3.12 .venv && uv pip install -e . --python .venv/bin/python)
-(cd mutator && uv venv --python 3.12 .venv && uv pip install -e . --python .venv/bin/python)
-```
-
-Check them: `~/.agents/tools/crapper/crapper --help` and `~/.agents/tools/mutator/mutator --help` should both print usage.
 
 There is nothing to fill in before the first run. The skills ask for what they need, once:
 
@@ -327,10 +356,11 @@ There is nothing to fill in before the first run. The skills ask for what they n
 - An Atlassian Jira connector in your agent.
 - An authenticated [GitHub CLI](https://cli.github.com) (`gh`), and git.
 - `python3` for the progress board, the PR status script and the Jira upload.
-- [uv](https://docs.astral.sh/uv/) and Python 3.12 for the two gate tools.
+- Python 3.11 or newer, Node.js with npm, and `make`.
+- Docker with Compose v2, for `lane`.
 - A test command for each repo, with coverage turned on. Gate 1 needs a coverage report to score anything.
 - `council` needs sub-agents on other providers' models. T3 Code does this with `delegate_task`.
-- `lane` needs the local Aruva setup in `skills/lane/references/setup.md`.
+- `lane compose` works with any project that has a Docker Compose file. The Aruva profile of `lane` also needs `skills/lane/references/setup.md`.
 
 `postwork` also reads Matt Pocock's `code-review` skill. That file is not in this repo. Copy it to `skills/postwork/references/matt-code-review.md`.
 
