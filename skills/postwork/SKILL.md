@@ -26,7 +26,7 @@ This skill only reports. It never edits project code or the ticket, and it write
 Before the first step, make a temporary to-do list from this skill's steps:
 
 ```
-python3 -I ~/.agents/skills/guide/scripts/todo.py new postwork --key <KEY> --from ~/.agents/skills/postwork/SKILL.md
+python3 -I ~/.agents/tools/todo.py new postwork --key <KEY> --from ~/.agents/skills/postwork/SKILL.md
 ```
 
 Leave out `--key` when the task has no key. Tick each item when its Done condition is met, with evidence: `todo.py tick postwork --key <KEY> N --note "<proof>"`. Mark a stuck item with `todo.py block`, and add a step you find later with `todo.py add`. Show the list with every update. The list deletes itself when the last item is ticked. See "To-do lists" in the conventions file.

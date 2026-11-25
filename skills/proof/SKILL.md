@@ -11,15 +11,15 @@ Be strict and vigilant. Do only what this skill says, in its order, and never st
 
 One picture per step that a reviewer can read in ten seconds: the bug on the left, the fix on the right, every change circled and numbered, a line saying what is being looked at and what was asked, and a verdict. It is built in two halves at different times.
 
-Read `~/.agents/skills/blueprint/references/conventions.md` first (Proof is mandatory, Live environment, Evidence). The tool is `~/.agents/skills/proof/scripts/pair.py`, called `pair.py` below, always run as `python3 -I`. Evidence lives in `.scratch/<KEY>-evidence/` (`before/`, `after/`, `compare/`) and the step list in `.scratch/<KEY>-proof.json`.
+Read `~/.agents/skills/blueprint/references/conventions.md` first (Proof is mandatory, Live environment, Evidence). The tool is `~/.agents/tools/pair.py`, called `pair.py` below, always run as `python3 -I`. Evidence lives in `.scratch/<KEY>-evidence/` (`before/`, `after/`, `compare/`) and the step list in `.scratch/<KEY>-proof.json`.
 
 ## To-do list
 
 Before the first step, make a temporary to-do list for the mode you are in:
 
 ```
-python3 -I ~/.agents/skills/guide/scripts/todo.py new proof --key <KEY> "Run pair.py init" "Write looking-at and asked for each step" "Capture the before pictures" "Render the left half" "Check the before half is COMPLETE"
-python3 -I ~/.agents/skills/guide/scripts/todo.py new proof --key <KEY> "Sync with dev" "Capture the after pictures" "Find every change with diff" "Circle and number every change" "Judge each step against what was asked" "Render and look at every picture" "Check the proof is COMPLETE"
+python3 -I ~/.agents/tools/todo.py new proof --key <KEY> "Run pair.py init" "Write looking-at and asked for each step" "Capture the before pictures" "Render the left half" "Check the before half is COMPLETE"
+python3 -I ~/.agents/tools/todo.py new proof --key <KEY> "Sync with dev" "Capture the after pictures" "Find every change with diff" "Circle and number every change" "Judge each step against what was asked" "Render and look at every picture" "Check the proof is COMPLETE"
 ```
 
 Use the first line for `before` mode and the second for `after` mode. Tick each item with evidence (`todo.py tick proof --key <KEY> N --note "<proof>"`), mark a stuck one with `todo.py block`, and show the list with every update. The list deletes itself when the last item is ticked. See "To-do lists" in the conventions file.
@@ -44,7 +44,7 @@ For every step, take the picture where a person would look.
 2. **Terminal, only when the step has no UI** (an API, worker, CLI or data step). Run the real command, save its full output as `before/NN-<what>.txt` (or `after/`), then make a picture:
 
    ```
-   python3 -I ~/.agents/skills/proof/scripts/pair.py textshot <KEY> <N> before|after --title "<the command>"
+   python3 -I ~/.agents/tools/pair.py textshot <KEY> <N> before|after --title "<the command>"
    ```
 
    This writes `NN-<what>.png` beside the text file. A step with a UI and a terminal side gets two steps.

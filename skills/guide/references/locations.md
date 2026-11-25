@@ -1,6 +1,6 @@
 # Where each agent loads skills
 
-Checked on macOS on 6 November 2026 against Claude Code 2.1.318, the Codex app's bundled CLI and Cursor. The scanner (`scripts/skills.py`) reads these places and nothing else.
+Checked on macOS on 6 November 2026 against Claude Code 2.1.318, the Codex app's bundled CLI and Cursor. The scanner (`~/.agents/tools/skills.py`) reads these places and nothing else.
 
 | Folder | Loaded by | How we know | Invoke name |
 |---|---|---|---|

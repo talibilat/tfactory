@@ -16,7 +16,7 @@ Input: a PR link or number. You may rebase and update the PR's own branch. Never
 Before the first step, make a temporary to-do list from this skill's steps:
 
 ```
-python3 -I ~/.agents/skills/guide/scripts/todo.py new modernize --key <KEY> --from ~/.agents/skills/modernize/SKILL.md
+python3 -I ~/.agents/tools/todo.py new modernize --key <KEY> --from ~/.agents/skills/modernize/SKILL.md
 ```
 
 Leave out `--key` when the task has no key. Tick each item when its Done condition is met, with evidence: `todo.py tick modernize --key <KEY> N --note "<proof>"`. Mark a stuck item with `todo.py block`. Add a step you find later with `todo.py add`. Show the list with every update. The list deletes itself when the last item is ticked. See "To-do lists" in the conventions file.

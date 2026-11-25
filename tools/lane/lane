@@ -20,7 +20,7 @@ if [ ! -f "$CONFIG" ]; then
     help|-h|--help) exec python3 -I "$SCRIPT_DIR/compose-lane.py" --help;;
   esac
 fi
-[ -f "$CONFIG" ] || { echo "lane: no config at $CONFIG (see references/setup.md)" >&2; exit 2; }
+[ -f "$CONFIG" ] || { echo "lane: no config at $CONFIG (see ~/.agents/skills/lane/references/setup.md)" >&2; exit 2; }
 # shellcheck disable=SC1090
 set -a; . "$CONFIG"; set +a
 : "${LANES_HOME:?}" "${BASE_PROJECT:?}" "${BASE_DIR:?}" "${BE_BASE_IMAGE:?}" "${AI_BASE_IMAGE:?}" "${FE_BASE_IMAGE:?}"
@@ -162,7 +162,7 @@ shared_cid() {
 check_shared() {
   local svc
   for svc in $SHARED_SERVICES; do
-    [ -n "$(shared_cid "$svc")" ] || die "base stack '$BASE_PROJECT' has no running '$svc'. Start it first (see references/setup.md)."
+    [ -n "$(shared_cid "$svc")" ] || die "base stack '$BASE_PROJECT' has no running '$svc'. Start it first (see ~/.agents/skills/lane/references/setup.md)."
   done
 }
 connect_shared() { # N
@@ -522,7 +522,7 @@ cmd_info() {
     "  ai repo   \(.repos.ai.dir)\(if .repos.ai.built then " (built)" else " (base image)" end)",
     "  frontend  \(.repos.fe.dir)\(if .repos.fe.built then " (built)" else " (base image)" end)"' "$d/lane.json"
   echo "  accounts  professor e2e-professor@example.com / Test123! (no 2FA); student test@example.com / password123;"
-  echo "            admin e2e-admin@example.com / Test123! (TOTP: lane totp $1 <email>). Full list: references/accounts.md"
+  echo "            admin e2e-admin@example.com / Test123! (TOTP: lane totp $1 <email>). Full list: ~/.agents/skills/lane/references/accounts.md"
 }
 
 cmd_ls() {

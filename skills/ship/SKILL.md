@@ -20,7 +20,7 @@ Keep the user informed as the Progress board section of the conventions file say
 Before the first step, make a temporary to-do list from this skill's steps:
 
 ```
-python3 -I ~/.agents/skills/guide/scripts/todo.py new ship --key <KEY> --from ~/.agents/skills/ship/SKILL.md
+python3 -I ~/.agents/tools/todo.py new ship --key <KEY> --from ~/.agents/skills/ship/SKILL.md
 ```
 
 Leave out `--key` when the task has no key. Tick each item when its Done condition is met, with evidence: `todo.py tick ship --key <KEY> N --note "<proof>"`. Mark a stuck item with `todo.py block`. Add a step you find later with `todo.py add`. Show the list with every update. The list deletes itself when the last item is ticked. See "To-do lists" in the conventions file.
@@ -32,7 +32,7 @@ Leave out `--key` when the task has no key. Tick each item when its Done conditi
    - All present: a track skill ran first. Reuse them.
    - Plan missing: read `~/.agents/skills/blueprint/SKILL.md`, let its step 1 pick the track, and run only that track's steps up to and including its plan step. Its last step ("Build, check and ship") does not run now. Then continue here.
    - The first line of `<KEY>-ticket.md` names the track (`Track: bug`, `feature` or `qa-return`). Read that track's skill (`fix-bug`, `build-feature` or `qa-return`). Its last step says what "done" means and how close-out differs.
-   - Use exactly the task folder `<root>/worktrees/<KEY>/` and the worktrees `blueprint` made. Run `~/.agents/skills/blueprint/scripts/worktree.sh list <root> <KEY>`: it must show a worktree for every repo in the plan's Task folder table. Never create a task worktree or a branch of your own (the slice worktrees in step 1 are the one exception). A repo is missing: add it with `~/.agents/skills/blueprint/scripts/worktree.sh add`, install, and run its baseline. The folder was archived: move its worktrees back with the commands in its `archive.md`.
+   - Use exactly the task folder `<root>/worktrees/<KEY>/` and the worktrees `blueprint` made. Run `~/.agents/tools/worktree.sh list <root> <KEY>`: it must show a worktree for every repo in the plan's Task folder table. Never create a task worktree or a branch of your own (the slice worktrees in step 1 are the one exception). A repo is missing: add it with `~/.agents/tools/worktree.sh add`, install, and run its baseline. The folder was archived: move its worktrees back with the commands in its `archive.md`.
 3. Check the track's starting proof. If it is missing, do not build. Run the track skill for this key instead:
    - `bug` and `qa-return`: the first line of `<KEY>-repro.md` is `Reproduced: yes`, its second line names the live environment, and `before/` holds the proof. A `qa-return` also has line 1 of `<KEY>-qa-return.md` reading `Verdict: fix incomplete` or `Verdict: broken later`.
    - `feature`: `<KEY>-acceptance.md` has a BA source on every row, and `before/` holds the proof of the current screen, or the board records why there is nothing to run.
@@ -51,7 +51,7 @@ Every builder works in its own slice worktree, so parallel edits never collide. 
 2. For each subpart in the batch, make its slice worktree from the task worktree's current commit:
 
    ```
-   ~/.agents/skills/blueprint/scripts/worktree.sh slice <root> <KEY> <short> <subpart-id>
+   ~/.agents/tools/worktree.sh slice <root> <KEY> <short> <subpart-id>
    ```
 
    It makes `<root>/worktrees/<KEY>/_<short>-<subpart-id>` on branch `<branch>--<subpart-id>` and links `node_modules` from the task worktree when it can. When it prints "install needed", run the install command from the conventions table in the slice before the builder starts. Env files are not copied, so a test that needs one runs in the task worktree after the merge. A subpart that spans repos gets one slice per repo.
@@ -126,7 +126,7 @@ Done when all four conditions hold on one commit.
 
 Run this on the final commit, after the loop ends. The before half from `reproduce` is already on the left of each picture. Keep `before/` untouched.
 
-1. Sync every repo with dev (`~/.agents/skills/lane/scripts/sync-dev.sh <worktree> ...`). If a worktree moved, rebuild the lane and run the baseline again.
+1. Sync every repo with dev (`~/.agents/tools/lane/sync-dev.sh <worktree> ...`). If a worktree moved, rebuild the lane and run the baseline again.
 2. Call the `proof` skill in `after` mode. It captures the same steps in the same place, with the same account, data and method, fills the right half, circles and numbers every change, writes what is being looked at and what was asked, and checks each step against the requirements. Pass it:
 
    > `proof after <KEY>. Same steps, same place, same account and data. Requirements: .scratch/<KEY>-plan.md checklist and .scratch/<KEY>-decisions.md. Fill the right half, circle and number every change, judge each step against what was asked, and reply COMPLETE or NOT COMPLETE with the items.`
@@ -138,10 +138,10 @@ Run this on the final commit, after the loop ends. The before half from `reprodu
 5. Run the after gate. It re-checks the before side, rejects an after image identical to its before image, and runs the `proof` check:
 
    ```
-   python3 -I ~/.agents/skills/blueprint/scripts/proof.py gate after <KEY>
+   python3 -I ~/.agents/tools/proof.py gate after <KEY>
    ```
 
-6. Open every picture in `compare/` and look at it: the circles sit on the real changes, the labels are readable, and the left and right show the same screen. `python3 -I ~/.agents/skills/blueprint/scripts/proof.py compare <KEY>` rebuilds them.
+6. Open every picture in `compare/` and look at it: the circles sit on the real changes, the labels are readable, and the left and right show the same screen. `python3 -I ~/.agents/tools/proof.py compare <KEY>` rebuilds them.
 
 The after shots `inspect` saved during its live run count, when they were taken on this same commit and cover every step. `proof` still builds and checks the pictures.
 

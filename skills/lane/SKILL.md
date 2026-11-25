@@ -13,7 +13,7 @@ A **lane** is one agent's private Aruva: its own database, Redis, Qdrant, Neo4j,
 
 `lane shot` and the flows open real Google Chrome with a visible window. Set `HEADLESS=1` only when there is no other option, and write the reason on the `Method:` line of the repro file.
 
-Everything goes through one command, `lane`, in this skill's `scripts/` folder. Below, `lane` means `~/.agents/skills/lane/scripts/lane`.
+Everything goes through one command, `lane`, in the shared tools folder. Below, `lane` means `~/.agents/tools/lane/lane`.
 
 **Memory comes first.** This Mac has 48 GB of RAM, shared by Docker, T3 Code, Chrome and every agent's lint and test runs. Once Docker took 32 GB and every app froze. The rules in "Memory rules" below stop that. They are not optional, and `lane` enforces most of them.
 
@@ -32,7 +32,7 @@ Take before and after the same way: follow `.scratch/<KEY>-repro.md` step by ste
 Before the first step, make a temporary to-do list from this skill's steps:
 
 ```
-python3 -I ~/.agents/skills/guide/scripts/todo.py new lane --key <KEY> --from ~/.agents/skills/lane/SKILL.md
+python3 -I ~/.agents/tools/todo.py new lane --key <KEY> --from ~/.agents/skills/lane/SKILL.md
 ```
 
 Leave out `--key` when the task has no key. Tick each item when its Done condition is met, with evidence: `todo.py tick lane --key <KEY> N --note "<proof>"`. Mark a stuck item with `todo.py block`. Add a step you find later with `todo.py add`. Show the list with every update. The list deletes itself when the last item is ticked. See "To-do lists" in the conventions file.
@@ -42,7 +42,7 @@ Leave out `--key` when the task has no key. Tick each item when its Done conditi
 1. **Check.** Run `lane doctor`. Every line must say `ok` (an `info` line about the shared network is fine). On a `FAIL`, follow `references/setup.md` and stop if you cannot fix it. Tell the user about a `WARN` on Docker's memory limit in plain words ("Docker may take more than 20 GB of your Mac's memory; please lower it in Docker Desktop, Settings, Resources"). Do not change Docker Desktop's settings yourself, because that restarts every running stack. Run `lane mem` to see Docker, the Mac, the caps and who is waiting.
    Done when doctor prints no `FAIL`, and any `WARN` has been shown to the user.
 
-2. **Sync, then claim a lane.** First run `scripts/sync-dev.sh <worktree> ...` for every worktree, so the lane is never behind dev. If it reports a dirty worktree or a conflict, stop and ask. Then pass the worktree of every repo your change touches, from the task folder (`<root>/worktrees/<KEY>/be`, `.../ai`, `.../fe`).
+2. **Sync, then claim a lane.** First run `~/.agents/tools/lane/sync-dev.sh <worktree> ...` for every worktree, so the lane is never behind dev. If it reports a dirty worktree or a conflict, stop and ask. Then pass the worktree of every repo your change touches, from the task folder (`<root>/worktrees/<KEY>/be`, `.../ai`, `.../fe`).
 
    ```
    lane up <TICKET-KEY> --be <uok-be worktree> --ai <uok-ai worktree> --fe <uok-fe worktree> --owner "<agent or chat name>"
@@ -63,7 +63,7 @@ Leave out `--key` when the task has no key. Tick each item when its Done conditi
 
    | Change | How | Proof |
    |---|---|---|
-   | Visible in the UI | `lane shot N <path> <file.png> --as <email>` for one page. For a journey, write a script with `scripts/browser.mjs` (`openLane`, `goto`) or run a ready flow: `lane flow N foundation --pdf <file>` | Numbered screenshots |
+   | Visible in the UI | `lane shot N <path> <file.png> --as <email>` for one page. For a journey, write a script with `~/.agents/tools/lane/browser.mjs` (`openLane`, `goto`) or run a ready flow: `lane flow N foundation --pdf <file>` | Numbered screenshots |
    | API | `TOKEN=$(lane login N <email>)` then `curl -H "authorization: Bearer $TOKEN" <api url>/...` | Request, status and body saved as `.txt` |
    | Worker, data or logs | `lane logs N api`, `lane exec N exec -T postgres psql -U postgres -d uok -c '...'` | The output saved as `.txt` |
 
@@ -126,4 +126,4 @@ No PR, no Jira comment, no Jira attachment and no ticket move until the before a
 
 ## When something breaks
 
-`scripts/isolation-check.sh` proves that no lane can reach another lane's services. Run it if you suspect cross-talk. `lane repair N` re-attaches the shared services after the base stack was recreated. `references/troubleshooting.md` lists the failures seen while building this skill and the fix for each. Read it before you change `lane` itself.
+`~/.agents/tools/lane/isolation-check.sh` proves that no lane can reach another lane's services. Run it if you suspect cross-talk. `lane repair N` re-attaches the shared services after the base stack was recreated. `references/troubleshooting.md` lists the failures seen while building this skill and the fix for each. Read it before you change `lane` itself.

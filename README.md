@@ -330,14 +330,16 @@ flowchart LR
   S --> C["~/.claude/skills"]
   S --> X["~/.codex/skills"]
   S --> R["~/.cursor/skills"]
+  M --> T["~/.agents/tools<br>link to tools/ in the checkout"]
   M --> B["~/.local/bin<br>crapper, mutator, harden, lane"]
 ```
 
 | What it installs | Where |
 |---|---|
 | Every skill, as a link to this checkout | `~/.agents/skills/`, then linked into `~/.claude/skills/`, `~/.codex/skills/` and `~/.cursor/skills/` |
-| crapper and mutator (bundled in `skills/ship/scripts/vendor/`) | `.venv/` inside the checkout |
-| The lane browser scripts | `skills/lane/scripts/node_modules/` |
+| Every CLI tool the skills run (see [tools/README.md](tools/README.md)) | `~/.agents/tools/`, a link to `tools/` in this checkout |
+| crapper and mutator (source in `tools/`) | `.venv/` inside the checkout |
+| The lane browser scripts | `tools/lane/node_modules/` |
 | Short commands `crapper`, `mutator`, `harden`, `lane` | `~/.local/bin/` (add it to PATH) |
 
 The skills are links, so a `git pull` updates every agent at once. Run `make install` again after a pull that changes `requirements.txt` or the bundled tools. An existing skill folder that is not a link to this checkout is left alone and reported.

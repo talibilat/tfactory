@@ -1,13 +1,13 @@
 # Quality gates
 
-Two tool checks run in `ship` step 3, before `inspect`. Each gives a pass or a fail, so no agent judges them. Both tools are our forks of Uncle Bob's crapper and mutator, bundled in `~/.agents/skills/ship/scripts/vendor/`. `make install` in the tstack checkout installs them. Run them through `~/.agents/skills/ship/scripts/quality`, written `quality` below.
+Two tool checks run in `ship` step 3, before `inspect`. Each gives a pass or a fail, so no agent judges them. Both tools are our forks of Uncle Bob's crapper and mutator, bundled in `~/.agents/tools/`. `make install` in the tstack checkout installs them. Run them through `~/.agents/tools/quality`, written `quality` below.
 
 Run each tool from the task worktree root of the repo that changed. A task with several repos runs the gates once per changed repo. Always pass `--base origin/<default branch>`, so the gates check committed work as well as local edits.
 
 ## Gate 1: crapper (complexity and coverage)
 
 ```
-~/.agents/skills/ship/scripts/quality crapper --changed --base origin/<default branch> --threshold 6
+~/.agents/tools/quality crapper --changed --base origin/<default branch> --threshold 6
 ```
 
 - Exit 0: pass.
@@ -30,7 +30,7 @@ Then commit with `<KEY>: <what changed>` and run Gate 1 again. Up to 3 cleaner r
 Runs only after Gate 1 passes.
 
 ```
-~/.agents/skills/ship/scripts/quality mutator --changed --base origin/<default branch>
+~/.agents/tools/quality mutator --changed --base origin/<default branch>
 ```
 
 - Exit 0: every mutant was killed. Pass.

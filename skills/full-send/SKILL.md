@@ -18,7 +18,7 @@ Read `~/.agents/skills/blueprint/references/conventions.md` first. Everything th
 Before the first step, make a temporary to-do list from this skill's steps:
 
 ```
-python3 -I ~/.agents/skills/guide/scripts/todo.py new full-send --key <KEY> --from ~/.agents/skills/full-send/SKILL.md
+python3 -I ~/.agents/tools/todo.py new full-send --key <KEY> --from ~/.agents/skills/full-send/SKILL.md
 ```
 
 Leave out `--key` when the task has no key. Tick each item when its Done condition is met, with evidence: `todo.py tick full-send --key <KEY> N --note "<proof>"`. Mark a stuck item with `todo.py block`, and add a step you find later with `todo.py add`. Show the list with every update. The list deletes itself when the last item is ticked. See "To-do lists" in the conventions file.

@@ -27,4 +27,4 @@ Use `lane compose` for any project with Docker Compose. A lane is a Compose proj
 
 4. Run `down` even if the start or test failed. It deletes the lane's volumes. Use test data and test credentials only. Separate Compose resources do not isolate a database or other service the app connects to outside Compose.
 
-Without `lane` on PATH, use `~/.agents/skills/lane/scripts/lane` instead. The Aruva commands are unchanged and use [Aruva setup](setup.md).
+Without `lane` on PATH, use `~/.agents/tools/lane/lane` instead. The Aruva commands are unchanged and use [Aruva setup](setup.md).

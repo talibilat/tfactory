@@ -14,7 +14,7 @@ Three models from different companies make different mistakes. Where all three a
 Before the first step, make a temporary to-do list from this skill's steps:
 
 ```
-python3 -I ~/.agents/skills/guide/scripts/todo.py new council --key <KEY> --from ~/.agents/skills/council/SKILL.md
+python3 -I ~/.agents/tools/todo.py new council --key <KEY> --from ~/.agents/skills/council/SKILL.md
 ```
 
 Leave out `--key` when the task has no key. Tick each item when its Done condition is met, with evidence: `todo.py tick council --key <KEY> N --note "<proof>"`. Mark a stuck item with `todo.py block`, and add a step you find later with `todo.py add`. Show the list with every update. The list deletes itself when the last item is ticked. See "To-do lists" in the conventions file.

@@ -16,7 +16,7 @@ First read `~/.agents/skills/blueprint/references/conventions.md`. The user's me
 ## To-do list
 
 ```
-python3 -I ~/.agents/skills/guide/scripts/todo.py new fix-bug --key <KEY> --from ~/.agents/skills/fix-bug/SKILL.md
+python3 -I ~/.agents/tools/todo.py new fix-bug --key <KEY> --from ~/.agents/skills/fix-bug/SKILL.md
 ```
 
 Leave out `--key` when the task has no key. Tick each item when its Done condition is met, with evidence. See "To-do lists" in the conventions file.
@@ -51,7 +51,7 @@ Run the `reproduce` skill. It checks the history, replays the bug step by step i
 | `Reproduced: already fixed` | Stop. See below. The current code no longer shows the bug and the history names the change that fixed it |
 
 ```
-python3 -I ~/.agents/skills/blueprint/scripts/proof.py gate before <KEY>
+python3 -I ~/.agents/tools/proof.py gate before <KEY>
 ```
 
 It must print `before gate: PASS`. Paste its last line in chat. Fix whatever any FAIL line names before moving on.

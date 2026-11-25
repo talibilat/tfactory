@@ -16,7 +16,7 @@ First read `~/.agents/skills/blueprint/references/conventions.md`. The user's me
 ## To-do list
 
 ```
-python3 -I ~/.agents/skills/guide/scripts/todo.py new build-feature --key <KEY> --from ~/.agents/skills/build-feature/SKILL.md
+python3 -I ~/.agents/tools/todo.py new build-feature --key <KEY> --from ~/.agents/skills/build-feature/SKILL.md
 ```
 
 Leave out `--key` when the task has no key. Tick each item when its Done condition is met, with evidence. See "To-do lists" in the conventions file.
@@ -54,8 +54,8 @@ Done when blueprint step 4 is done and the ticket file starts with `Track: featu
 4. Run the before gate and paste its last line, then mark the stage done on the board:
 
    ```
-   python3 -I ~/.agents/skills/blueprint/scripts/proof.py gate before <KEY>
-   python3 -I ~/.agents/skills/guide/scripts/progress.py set <KEY> repro 6 6 --note "before proof of the current screen"
+   python3 -I ~/.agents/tools/proof.py gate before <KEY>
+   python3 -I ~/.agents/tools/progress.py set <KEY> repro 6 6 --note "before proof of the current screen"
    ```
 
 Work with nothing to run, such as a docs or config text change, skips the before proof: run `progress.py skip <KEY> repro --note "<why>"` instead.

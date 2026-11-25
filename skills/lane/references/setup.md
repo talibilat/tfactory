@@ -7,7 +7,7 @@ One-time setup per machine. `lane doctor` checks every item below.
 Docker Desktop with Compose v2.20 or newer (the `include` key with `env_file`), `jq`, `python3`, `node` 18 or newer, and Google Chrome. Then install the browser driver into the skill's own folder, outside every repo:
 
 ```
-npm --prefix ~/.agents/skills/lane/scripts install
+npm --prefix ~/.agents/tools/lane install
 ```
 
 This installs `playwright-core` only. It drives your existing Chrome, so no browser download.

@@ -57,7 +57,7 @@ For a big topic, go one layer at a time and end with one short question ("Want m
 When the user lists points and asks for them separately ("each one", "one by one", "separately"), give each point its own section, in their order, labelled with their words or number. Cover each fully. Before sending, count the points and the sections: the numbers must match. For three or more points, keep a to-do list so none is skipped:
 
 ```
-python3 -I ~/.agents/skills/guide/scripts/todo.py new plain-talk "<one item per point>"
+python3 -I ~/.agents/tools/todo.py new plain-talk "<one item per point>"
 ```
 
 When the user lists items but does not ask for them separately, tell one story, call out the item that needs attention, and give counts.

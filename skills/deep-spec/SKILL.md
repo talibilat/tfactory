@@ -96,7 +96,7 @@ Everything lives in `.scratch/<KEY>-spec/` in this chat's project folder:
 ## To-do list
 
 ```
-python3 -I ~/.agents/skills/guide/scripts/todo.py new deep-spec --key <KEY> --from ~/.agents/skills/deep-spec/SKILL.md
+python3 -I ~/.agents/tools/todo.py new deep-spec --key <KEY> --from ~/.agents/skills/deep-spec/SKILL.md
 ```
 
 Tick each item when its Done condition is met, with evidence. See "To-do lists" in the conventions file.
@@ -177,7 +177,7 @@ Done when every open ticket, PR and chat that touches this area is listed, and e
 
 The investigation reads code only. It never edits, commits or pushes.
 
-1. For each repo the ticket touches, make the task worktree with `~/.agents/skills/blueprint/scripts/worktree.sh add <root> <KEY> <short> <repo-path> feature/<KEY>-<slug>`. It starts from the latest default branch and leaves the old checkout alone. `blueprint` reuses it later.
+1. For each repo the ticket touches, make the task worktree with `~/.agents/tools/worktree.sh add <root> <KEY> <short> <repo-path> feature/<KEY>-<slug>`. It starts from the latest default branch and leaves the old checkout alone. `blueprint` reuses it later.
 2. Write the commit of each worktree (`git -C <worktree> rev-parse --short HEAD`) at the top of `research/inflight.md`. Every `file:line` in the research refers to these commits.
 3. Read in-flight PRs with `gh pr diff` and `gh pr view`. Never check them out into the task worktree.
 4. Run `git -C <worktree> status` before and after the research. It must be clean both times.
@@ -257,7 +257,7 @@ Done when every question (from the panel, or from the draft in light mode) is an
 2. Run the check. It must print PASS:
 
    ```
-   python3 -I ~/.agents/skills/deep-spec/scripts/spec-check.py <KEY>
+   python3 -I ~/.agents/tools/spec-check.py <KEY>
    ```
 
 3. **Jira-only grilling** (full only). Run blueprint step 8.2 against the spec (`~/.agents/skills/blueprint/SKILL.md`): neutral questions in `reviews/grill-questions.md`, a fresh answerer that reads only Jira, answers in `reviews/grill.md`. Where Jira disagrees with the spec, that is a hard decision for the user. A `NOT IN JIRA` answer on a requirement with no approval id becomes an open question.

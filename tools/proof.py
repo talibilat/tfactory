@@ -26,7 +26,7 @@ import subprocess
 import sys
 from pathlib import Path
 
-runtime = Path(__file__).resolve().parents[3] / ".venv"
+runtime = Path(__file__).resolve().parents[1] / ".venv"
 if __name__ == "__main__" and (runtime / "bin/python").is_file() and Path(sys.prefix) != runtime:
     os.execv(runtime / "bin/python", [str(runtime / "bin/python"), "-I", __file__, *sys.argv[1:]])
 
@@ -200,15 +200,15 @@ def gate_after(args):
 
 
 def load_pair():
-    """Load pair.py from the proof skill, which sits next to this skill."""
+    """Load pair.py, which sits next to this script in tools/."""
     for base in (Path(__file__), Path(__file__).resolve()):
-        path = base.parents[2] / "proof" / "scripts" / "pair.py"
+        path = base.with_name("pair.py")
         if path.exists():
             spec = importlib.util.spec_from_file_location("pair", path)
             module = importlib.util.module_from_spec(spec)
             spec.loader.exec_module(module)
             return module
-    sys.exit("the proof skill is not installed next to this one (skills/proof/scripts/pair.py)")
+    sys.exit("pair.py is missing next to proof.py in tools/")
 
 
 def pair_args(args, stage="after"):

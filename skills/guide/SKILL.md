@@ -16,7 +16,7 @@ Pick the branch that fits what the user asked. A bare `guide` in a chat with wor
 Make a short temporary to-do list and tick each item as you finish it:
 
 ```
-python3 -I ~/.agents/skills/guide/scripts/todo.py new guide "Read the chat" "Read the board and the task files" "Say where the work stands and what blocks it" "Give the one thing to type next"
+python3 -I ~/.agents/tools/todo.py new guide "Read the chat" "Read the board and the task files" "Say where the work stands and what blocks it" "Give the one thing to type next"
 ```
 
 It deletes itself when the last item is ticked. See "To-do lists" in the conventions file.
@@ -24,7 +24,7 @@ It deletes itself when the last item is ticked. See "To-do lists" in the convent
 ## Where am I, and what next
 
 1. Read the chat above: the task, the last skill that ran, the last thing that finished or failed.
-2. Run `python3 -I ~/.agents/skills/guide/scripts/progress.py list` from the chat's project folder, then `progress.py show <KEY>` for the task in this chat. With no board, look at which `.scratch/<KEY>-*` files exist and place the work in the table below.
+2. Run `python3 -I ~/.agents/tools/progress.py list` from the chat's project folder, then `progress.py show <KEY>` for the task in this chat. With no board, look at which `.scratch/<KEY>-*` files exist and place the work in the table below.
 3. Answer in this order: the task in one line, the board table, the stage the work is in and what is blocking it, and the exact thing to type next.
 
 | What exists | The work is at | Type next |
@@ -90,7 +90,7 @@ Read its `SKILL.md` and explain it in a few plain sentences with an everyday exa
 1. Run the scanner:
 
    ```
-   python3 -I ~/.agents/skills/guide/scripts/skills.py
+   python3 -I ~/.agents/tools/skills.py
    ```
 
    Add `--project <repo path>` for each repo the user is working in. Add `--agent claude|codex|cursor` to show one agent, or `--find <word>` to search. `--json` gives the raw records.

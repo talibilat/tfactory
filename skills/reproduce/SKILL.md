@@ -20,7 +20,7 @@ Update the `repro` row of the progress board after each step.
 Before the first step, make a temporary to-do list from this skill's steps:
 
 ```
-python3 -I ~/.agents/skills/guide/scripts/todo.py new reproduce --key <KEY> --from ~/.agents/skills/reproduce/SKILL.md
+python3 -I ~/.agents/tools/todo.py new reproduce --key <KEY> --from ~/.agents/skills/reproduce/SKILL.md
 ```
 
 Leave out `--key` when the task has no key. Tick each item when its Done condition is met, with evidence: `todo.py tick reproduce --key <KEY> N --note "<proof>"`. Mark a stuck item with `todo.py block`. Add a step you find later with `todo.py add`. Show the list with every update. The list deletes itself when the last item is ticked. See "To-do lists" in the conventions file.
@@ -56,7 +56,7 @@ Done when `<KEY>-history.md` exists.
 
 ## 3. Reproduce it live, step by step
 
-Reproduce in the live environment only: a running copy of the app. Before you start a local copy, sync every repo with dev: `~/.agents/skills/lane/scripts/sync-dev.sh <worktree> ...`. A local copy is never behind dev. A local copy counts: Docker, and for Aruva a `lane` (a private Docker copy) built from the current default branch. For other apps, start the app from the worktree with its own Docker or run command. A deployed dev environment also counts when the report was made there. Follow `<KEY>-repro.md` one step at a time and check each step's result before the next. Write the environment on the second line of `<KEY>-repro.md`, for example `Live environment: lane 2 from uok-be abc1234, uok-fe def5678`.
+Reproduce in the live environment only: a running copy of the app. Before you start a local copy, sync every repo with dev: `~/.agents/tools/lane/sync-dev.sh <worktree> ...`. A local copy is never behind dev. A local copy counts: Docker, and for Aruva a `lane` (a private Docker copy) built from the current default branch. For other apps, start the app from the worktree with its own Docker or run command. A deployed dev environment also counts when the report was made there. Follow `<KEY>-repro.md` one step at a time and check each step's result before the next. Write the environment on the second line of `<KEY>-repro.md`, for example `Live environment: lane 2 from uok-be abc1234, uok-fe def5678`.
 
 **Use the real thing, where you can watch it.** Run the app in Docker (a `lane` for Aruva) and drive it in real Google Chrome on this computer, with a visible window, one step at a time, taking each screenshot as the behavior happens. `lane shot` and the flows open a visible Chrome window by default. Do not use a background or headless script or a recorded flow unless there is no other option. Then write the reason on the `Method:` line (`Method: headless script because <reason>`). The proof gate rejects a script method with no reason.
 
@@ -122,7 +122,7 @@ Then call the `proof` skill in `before` mode. It captures the UI first (terminal
 Strip tokens, secrets and personal data. Close every browser window and tab you opened, and give the lane back with `lane down N`. Then run the before gate:
 
 ```
-python3 -I ~/.agents/skills/blueprint/scripts/proof.py gate before <KEY>
+python3 -I ~/.agents/tools/proof.py gate before <KEY>
 ```
 
 It checks the result, the live environment and method lines, that every step has a real screenshot and that the logs exist. Paste its last line in chat.

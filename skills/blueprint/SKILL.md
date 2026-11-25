@@ -28,7 +28,7 @@ First read `~/.agents/skills/blueprint/references/conventions.md`. It holds the 
 Before the first step, make a temporary to-do list from this skill's steps:
 
 ```
-python3 -I ~/.agents/skills/guide/scripts/todo.py new blueprint --key <KEY> --from ~/.agents/skills/blueprint/SKILL.md
+python3 -I ~/.agents/tools/todo.py new blueprint --key <KEY> --from ~/.agents/skills/blueprint/SKILL.md
 ```
 
 Leave out `--key` when the task has no key. Tick each item when its Done condition is met, with evidence: `todo.py tick blueprint --key <KEY> N --note "<proof>"`. Mark a stuck item with `todo.py block`, and add a later step with `todo.py add`. Show the list with every update. The list deletes itself when the last item is ticked. See "To-do lists" in the conventions file.
@@ -92,7 +92,7 @@ Everything for the task lives in one folder, `<root>/worktrees/<KEY>/`, with one
 2. For each repo, make its worktree in the task folder (`<root>/worktrees/<KEY>/<short>`):
 
    ```
-   ~/.agents/skills/blueprint/scripts/worktree.sh add <root> <KEY> <short> <repo-path> <branch>
+   ~/.agents/tools/worktree.sh add <root> <KEY> <short> <repo-path> <branch>
    ```
 
    It makes the folder on the first call, branches from the latest `origin/<default branch>`, and resumes an existing worktree. After a resume, run `sync-dev.sh` to catch up with dev. Ask when the branch holds someone else's commits. Use the same branch name in every repo. Never create a worktree any other way or anywhere else.
@@ -100,7 +100,7 @@ Everything for the task lives in one folder, `<root>/worktrees/<KEY>/`, with one
 4. Run test, lint, typecheck and build in each. Keep pass or fail, counts and failing test names. Record failures that existed before this change so they are not blamed on it. Leave them unfixed.
 5. **If the research or the plan later shows another repo is needed**, add its worktree to the same folder with `worktree.sh add`, install, run its baseline, and add it to the plan's Task folder table before the plan is finished. Never move the task to a new folder.
 
-Done when `~/.agents/skills/blueprint/scripts/worktree.sh list <root> <KEY>` shows a clean worktree for every repo, each with a baseline row.
+Done when `~/.agents/tools/worktree.sh list <root> <KEY>` shows a clean worktree for every repo, each with a baseline row.
 
 ## 5. The track's before step (a hard gate)
 
@@ -112,7 +112,7 @@ The track skill owns this step, because each track proves the start differently:
 | `feature` | The acceptance checklist with a BA source per criterion, and before pictures of the current screen | `build-feature` step 3 |
 | `qa-return` | `reproduce` replays QA's exact steps on dev and on a lane, and a verdict decides whether to go on | `qa-return` step 4 |
 
-Run that step from the track skill, then come back. Every track ends it with `python3 -I ~/.agents/skills/blueprint/scripts/proof.py gate before <KEY>` printing `before gate: PASS`, unless the track stopped the work or nothing can run (a docs or config text change, with the reason on the board).
+Run that step from the track skill, then come back. Every track ends it with `python3 -I ~/.agents/tools/proof.py gate before <KEY>` printing `before gate: PASS`, unless the track stopped the work or nothing can run (a docs or config text change, with the reason on the board).
 
 Done when the track's before step is done, or the track stopped the work with its report.
 
@@ -141,7 +141,7 @@ Done when every question the ticket and the chat raise has an answer with a sour
 3. Fill in the plan's Checklist: one line for each thing that was asked, pointing to the subpart that builds it and the check that proves it.
 4. Compare the plan estimate with the Jira estimate. If the plan is more than 1 hour over, say so under Blockers.
 
-Run `python3 -I ~/.agents/skills/blueprint/scripts/grounded.py check <KEY> --stage decisions` before step 8. It must print PASS: a requirement decision with no ticket, page or attachment behind it and no quote is not allowed.
+Run `python3 -I ~/.agents/tools/grounded.py check <KEY> --stage decisions` before step 8. It must print PASS: a requirement decision with no ticket, page or attachment behind it and no quote is not allowed.
 
 Done when every checklist line maps to a subpart, every decision row has its backing, and the decisions check passes.
 
@@ -168,7 +168,7 @@ Run the plan check and the Jira grilling, then fix what they find.
    5. Run the grounded check. It must print PASS:
 
       ```
-      python3 -I ~/.agents/skills/blueprint/scripts/grounded.py check <KEY>
+      python3 -I ~/.agents/tools/grounded.py check <KEY>
       ```
 
 Done when the plan check has no open plan problem, `grounded.py check` prints `grounded: PASS`, and every checklist line is ticked "planned".

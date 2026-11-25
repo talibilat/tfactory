@@ -211,7 +211,7 @@ Use sub-agents freely, one per independent piece.
 
 ## To-do lists
 
-Every skill makes a temporary to-do list before its first step. The tool is `python3 -I ~/.agents/skills/guide/scripts/todo.py` (called `todo.py`), and `--from <SKILL.md>` fills the list from the skill's own steps.
+Every skill makes a temporary to-do list before its first step. The tool is `python3 -I ~/.agents/tools/todo.py` (called `todo.py`), and `--from <SKILL.md>` fills the list from the skill's own steps.
 
 - Tick an item only when its Done condition is met, and write the evidence in `--note`. Never tick a step you skipped or did not finish.
 - Write every note, blocker and update line in layman language, as `unslop` says. A blocker says what is stuck, why, and what would unblock it, for example `block 4 "Docker will not start. It needs more free memory. Close a heavy app or ask me to free it."`.
@@ -222,7 +222,7 @@ Every skill makes a temporary to-do list before its first step. The tool is `pyt
 
 ## Progress board
 
-One board per task shows how far each stage is. The command is `python3 -I ~/.agents/skills/guide/scripts/progress.py`, called `progress.py` below. Run it from the chat's project folder, or pass `--dir <path to .scratch>`.
+One board per task shows how far each stage is. The command is `python3 -I ~/.agents/tools/progress.py`, called `progress.py` below. Run it from the chat's project folder, or pass `--dir <path to .scratch>`.
 
 - `progress.py init <KEY>` once, at the start of `blueprint`.
 - `progress.py set <KEY> <stage> <done> <total> --note "<what just finished>"` whenever a step finishes.
@@ -270,7 +270,7 @@ Status moves follow the same milestones: In Progress on claim, Code Review when 
 
 Uploading screenshots to a ticket needs a Jira API token, because the Jira connector cannot upload files. It is saved once in `~/.config/tstack/jira.env` (mode 600, outside every repo) as `JIRA_SITE`, `JIRA_EMAIL` and `JIRA_API_TOKEN`.
 
-- Upload: `python3 -I ~/.agents/skills/blueprint/scripts/jira-attach.py <KEY> <files>`. Test the login: the same script with `--check`.
+- Upload: `python3 -I ~/.agents/tools/jira-attach.py <KEY> <files>`. Test the login: the same script with `--check`.
 - When the file is missing, ask once with `request_secret` (label "Jira API token", link `https://id.atlassian.com/manage-profile/security/api-tokens`, delivery `file`). Write the three values into the env file with one command that reads the secret file, run `--check`, and carry on. Never print the token or put it in chat, a ticket, a commit or a log.
 
 ## Live environment
@@ -280,7 +280,7 @@ A live environment is a running copy of the app: local (Docker, or a `lane` for 
 **A local copy is never behind dev.** Before you start, rebuild or test with any local copy, sync every repo it uses:
 
 ```
-~/.agents/skills/lane/scripts/sync-dev.sh <worktree> [<worktree> ...]
+~/.agents/tools/lane/sync-dev.sh <worktree> [<worktree> ...]
 ```
 
 It fetches `origin`, and rebases a clean worktree onto the latest default branch (`dev`). It leaves a worktree with uncommitted changes alone and aborts on a conflict, and either case needs the user. It never uses `git stash`.
@@ -300,7 +300,7 @@ It fetches `origin`, and rebases a clean worktree onto the latest default branch
 
 The before and after comparison is the main proof that a bug is fixed. Only the user can waive it, by saying "skip proof" (or the same in clear words) in the call. When they do, write their words to `.scratch/<KEY>-evidence/SKIPPED-BY-USER.txt`, and say "Proof skipped at the user's request" in the PR and the Jira comment.
 
-The path, with a check at each point (`python3 -I ~/.agents/skills/blueprint/scripts/proof.py`, called `proof.py` below):
+The path, with a check at each point (`python3 -I ~/.agents/tools/proof.py`, called `proof.py` below):
 
 | When | What | Check |
 |---|---|---|
@@ -327,7 +327,7 @@ One folder per task, one worktree per repo inside it, all on one branch name:
 - `blueprint` makes the folder first, and makes it the first thing its plan lists. It adds a worktree for each repo it needs, and when the research shows another repo is needed it adds that one to the same folder.
 - `ship`, `inspect`, `lane`, `proof` and `babysit` work only in that folder. They never create a worktree or a branch of their own, except the builders' slice worktrees, which `ship` makes with `worktree.sh slice` and merges back with `worktree.sh slice-done`.
 - Slice worktrees sit in the task folder as `_<short>-<subpart>`, on branch `<branch>--<subpart>`. The leading underscore keeps `archive` from moving them. None may be left when the build ends.
-- Use `~/.agents/skills/blueprint/scripts/worktree.sh` (called `worktree.sh`): `add <root> <KEY> <short> <repo-path> <branch>`, `list <root> <KEY>`, and `archive <root> <KEY> --merged --scratch .scratch`.
+- Use `~/.agents/tools/worktree.sh` (called `worktree.sh`): `add <root> <KEY> <short> <repo-path> <branch>`, `list <root> <KEY>`, and `archive <root> <KEY> --merged --scratch .scratch`.
 - A task started before this layout has its worktrees at `<root>/<repo>-worktrees/<KEY>`. Move each into the task folder with `git -C <repo> worktree move <old path> <root>/worktrees/<KEY>/<short>`, once, when the task is next picked up.
 - `babysit` moves the whole task folder to `<root>/archived-worktrees/<KEY>/` once every PR of the task is merged. It refuses while a worktree has uncommitted changes.
 

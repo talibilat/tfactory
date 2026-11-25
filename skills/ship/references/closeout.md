@@ -10,7 +10,7 @@ Each step below is on the conventions file's "Never ask" list, so none of them n
 
 Stop here unless every `compare/` image was opened and looked at (not just gated), shows the bug before and the fix after, and is a valid image. After each upload to GitHub or Jira, open the uploaded image and confirm it renders. Never open the PR or comment on Jira first. See the Proof gate in `ship`. The PR table and the Jira comment use the annotated pair from the `proof` skill: before left, after right, every change circled and numbered, a caption with what is being looked at and what was asked, and a verdict. A `proof` result of NOT COMPLETE stops the close out.
 
-Evidence is in `.scratch/<KEY>-evidence/`: `before/`, `after/` under the same file names, `compare/` with the side-by-side images, and the logs. Run `python3 -I ~/.agents/skills/blueprint/scripts/proof.py gate after <KEY>` again on the final commit. If it does not print PASS, go back to step 5 of the skill. Never open a PR without the comparison.
+Evidence is in `.scratch/<KEY>-evidence/`: `before/`, `after/` under the same file names, `compare/` with the side-by-side images, and the logs. Run `python3 -I ~/.agents/tools/proof.py gate after <KEY>` again on the final commit. If it does not print PASS, go back to step 5 of the skill. Never open a PR without the comparison.
 
 Publish the images on an evidence branch. It shares no history with the code, so it cannot be merged by accident.
 
@@ -77,7 +77,7 @@ Earlier work: <old key>, PR #<number>
 Then attach the files to the ticket itself. This is required:
 
 ```
-python3 -I ~/.agents/skills/blueprint/scripts/proof.py attach <KEY>
+python3 -I ~/.agents/tools/proof.py attach <KEY>
 ```
 
 It uploads every comparison image and the logs as `before-<name>` and `after-<name>`, and skips what is already there. It uses the Jira token saved on this machine. If the token file is missing, ask for the token once as the Jira token section of the conventions file says, then run it again. Without a token, copy `compare/`, `before/` and `after/` to `~/Desktop/<KEY>/` and tell the user the folder is ready to drag in. The step is not done until the user confirms.
@@ -99,7 +99,7 @@ The PR is good when CI passed, there are no conflicts, `unresolved_count` is 0 a
 Before the ticket moves, run the publish check. It reads Jira and every PR and fails when the comparison images are not on the ticket or not in a PR description:
 
 ```
-python3 -I ~/.agents/skills/blueprint/scripts/proof.py verify <KEY> --pr <org>/<repo>#<number>
+python3 -I ~/.agents/tools/proof.py verify <KEY> --pr <org>/<repo>#<number>
 ```
 
 It must print `publish check: PASS`. Fix what it names, then run it again. Do not move the ticket to Code Review before it passes.

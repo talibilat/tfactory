@@ -18,7 +18,7 @@ Call forms: `qa-return PROJ-123` uses QA's latest comment. `qa-return PROJ-123 <
 ## To-do list
 
 ```
-python3 -I ~/.agents/skills/guide/scripts/todo.py new qa-return --key <KEY> --from ~/.agents/skills/qa-return/SKILL.md
+python3 -I ~/.agents/tools/todo.py new qa-return --key <KEY> --from ~/.agents/skills/qa-return/SKILL.md
 ```
 
 Tick each item when its Done condition is met, with evidence. See "To-do lists" in the conventions file.
@@ -96,7 +96,7 @@ Done when `worktree.sh list <root> <KEY>` shows every repo on the earlier branch
 On `fix incomplete` and `broken later`, run the before gate and paste its last line:
 
 ```
-python3 -I ~/.agents/skills/blueprint/scripts/proof.py gate before <KEY>
+python3 -I ~/.agents/tools/proof.py gate before <KEY>
 ```
 
 Done when line 1 holds the verdict, and either `gate before` prints PASS or the work has stopped with a draft for the user.

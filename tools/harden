@@ -8,5 +8,5 @@ if len(sys.argv) < 2 or sys.argv[1] in {"-h", "--help"}:
     print("Usage: harden <base-ref> [mutator options]")
     raise SystemExit(0 if len(sys.argv) > 1 else 2)
 
-quality = Path(__file__).resolve().parents[2] / "ship/scripts/quality"
+quality = Path(__file__).resolve().with_name("quality")
 os.execv(quality, [str(quality), "mutator", "--base", sys.argv[1], "--mutate-all", *sys.argv[2:]])

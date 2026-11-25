@@ -26,7 +26,7 @@ Never edit the ticket before the user says yes.
 Before the first step, make a temporary to-do list from this skill's steps:
 
 ```
-python3 -I ~/.agents/skills/guide/scripts/todo.py new ticket-prework-review --key <KEY> --from ~/.agents/skills/ticket-prework-review/SKILL.md
+python3 -I ~/.agents/tools/todo.py new ticket-prework-review --key <KEY> --from ~/.agents/skills/ticket-prework-review/SKILL.md
 ```
 
 Leave out `--key` when the task has no key. Tick each item when its Done condition is met, with evidence: `todo.py tick ticket-prework-review --key <KEY> N --note "<proof>"`. Mark a stuck item with `todo.py block`, and add a step you find later with `todo.py add`. Show the list with every update. The list deletes itself when the last item is ticked. See "To-do lists" in the conventions file.

@@ -18,7 +18,7 @@ Input: a PR link or number. Read `~/.agents/skills/blueprint/references/conventi
 Before the first step, make a temporary to-do list from this skill's steps:
 
 ```
-python3 -I ~/.agents/skills/guide/scripts/todo.py new babysit --key <KEY> --from ~/.agents/skills/babysit/SKILL.md
+python3 -I ~/.agents/tools/todo.py new babysit --key <KEY> --from ~/.agents/skills/babysit/SKILL.md
 ```
 
 Leave out `--key` when the task has no key. Tick each item when its Done condition is met, with evidence: `todo.py tick babysit --key <KEY> N --note "<proof>"`. Mark a stuck item with `todo.py block`. Add a step you find later with `todo.py add`. Show the list with every update. The list deletes itself when the last item is ticked. See "To-do lists" in the conventions file.
@@ -26,7 +26,7 @@ Leave out `--key` when the task has no key. Tick each item when its Done conditi
 ## 1. Look at the PR now
 
 ```
-python3 -I ~/.agents/skills/ship/scripts/pr-status.py <org>/<repo> <number> --state .scratch/<KEY>-pr-<repo>.json
+python3 -I ~/.agents/tools/pr-status.py <org>/<repo> <number> --state .scratch/<KEY>-pr-<repo>.json
 ```
 
 It makes one call and prints about 1 KB of JSON: PR state, CI result, review decision, open threads, new comments since the last check, what to do next and when to check again. Act on `next`. With several PRs, run it once per PR.
@@ -96,7 +96,7 @@ The PR is good when CI passed, every warning is judged and fixed (or explained),
 - `state` is MERGED: call `unwatch_pull_request`. When every PR of the task is merged, archive the task folder, then post the last Jira update and tell the user:
 
   ```
-  ~/.agents/skills/blueprint/scripts/worktree.sh archive <root> <KEY> --merged --scratch .scratch
+  ~/.agents/tools/worktree.sh archive <root> <KEY> --merged --scratch .scratch
   ```
 
   It moves the whole `<root>/worktrees/<KEY>/` folder, every repo worktree inside it, to `<root>/archived-worktrees/<KEY>/`. It copies the task files (ticket, plan, reviews, evidence) into `scratch/` there and writes `archive.md` with each repo, branch, last commit and the command to move it back. It refuses while a worktree has uncommitted changes. Then show the list and ask the user. Give the archive path in the final message.

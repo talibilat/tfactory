@@ -30,7 +30,7 @@ import textwrap
 import time
 from pathlib import Path
 
-runtime = Path(__file__).resolve().parents[3] / ".venv"
+runtime = Path(__file__).resolve().parents[1] / ".venv"
 if __name__ == "__main__" and (runtime / "bin/python").is_file() and Path(sys.prefix) != runtime:
     os.execv(runtime / "bin/python", [str(runtime / "bin/python"), "-I", __file__, *sys.argv[1:]])
 
