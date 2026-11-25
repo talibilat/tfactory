@@ -29,7 +29,7 @@ Common swaps:
 
 ## Pictures
 
-Draw diagrams with Mermaid so they show as pictures. Use 3 to 6 boxes with everyday labels. Show what happens in the product, not how the code is laid out. If the chat can't show Mermaid, use plain text arrows.
+Draw diagrams with Mermaid. Use 3 to 6 boxes with everyday labels. Show what happens in the product, not how the code is laid out. If the chat can't show Mermaid, use plain text arrows.
 
 Every report has two pictures:
 

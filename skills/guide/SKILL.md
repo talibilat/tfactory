@@ -7,13 +7,13 @@ Never assume a requirement. Check Jira for the latest requirements before acting
 
 # guide
 
-Give directions, and keep the answer short. Answer from the chat, the files on disk and the skill files, never from memory. Change nothing: this skill only reads and explains.
+Give directions and keep the answer short. Answer from the chat, the files on disk and the skill files, never from memory. Change nothing: this skill only reads and explains.
 
 Pick the branch that fits what the user asked. A bare `guide` in a chat with work in it means "Where am I". A bare `guide` in an empty chat means "How the pipeline works".
 
 ## To-do list
 
-Make a short temporary to-do list so no part of the answer is skipped, and tick each item as you finish it:
+Make a short temporary to-do list and tick each item as you finish it:
 
 ```
 python3 -I ~/.agents/skills/guide/scripts/todo.py new guide "Read the chat" "Read the board and the task files" "Say where the work stands and what blocks it" "Give the one thing to type next"
@@ -52,7 +52,7 @@ Done when the user knows the stage and has one thing to type.
 
 ## How the pipeline works
 
-Show this table, then one line on how the stages follow each other. The order and the rules live in `~/.agents/skills/blueprint/references/conventions.md`. Read the skill's own `SKILL.md` before explaining one in detail.
+Show this table, then one line on how the stages follow each other. The order and rules are in `~/.agents/skills/blueprint/references/conventions.md`. Read a skill's own `SKILL.md` before explaining it in detail.
 
 | Skill | When to use it | How to use it | What you get |
 |---|---|---|---|
@@ -65,7 +65,7 @@ Show this table, then one line on how the stages follow each other. The order an
 | `proof` | A bug needs a before and after picture. `reproduce` calls it for the left half, `ship` and `inspect` for the right half. Type it to check one yourself | `proof before KEY` or `proof after KEY` | One annotated picture per step: before left, after right, changes circled and numbered, what was asked written on it, and COMPLETE or NOT COMPLETE |
 | `ship` | After the plan. The track skill starts it by itself | `ship PROJ-123`. With no plan it runs the track first. Adding "build only" builds without QA or a PR | Parallel builders, each in its own slice worktree, the crapper and mutator quality gates, the `inspect` loop until the score is 100, after proof, a PR and a Jira comment with before and after screenshots, then the PR watch until merge |
 | `inspect` | `ship` calls it after the build. Type it yourself to check any ticket, branch or PR | `inspect PROJ-123` | Four code reviewers, a live run, every acceptance criterion checked, a score out of 100 and a verdict |
-| `lane` | Whenever the app must run for real: before proof, live run, after proof. The other skills call it | `lane`, or let the pipeline call it | A private copy of Aruva per agent, UI screenshots, API transcripts and logs |
+| `lane` | Whenever the app must run for real: before proof, live run, after proof. The other skills call it | `lane`, or let the pipeline call it | A private copy of Aruva per agent, UI screenshots, API transcripts and logs. Queues when memory is short, caps container memory, and closes every lane when testing ends |
 | `babysit` | A PR is open and must reach merge. `ship` calls it | `babysit <PR link>` | Failed checks fixed, every comment answered and resolved, the branch kept up to date, until merged |
 | `council` | A plan, a change or a decision deserves a second, third and fourth opinion | `council`, with the thing to review | Grok 4.7, Claude Opus 5.5 and GPT Sol at medium effort, scored out of 10, repeated until they agree |
 | `deep-spec` | A ticket needs a deep look and a rewritten spec before anyone builds it | `deep-spec PROJ-123`, plus any links with notes | Every ticket claim checked, work in flight found, security and bug review, grilling and a council, a spec where every line has a source. Jira changes only with your yes. Chat named `SPEC <KEY>` |
@@ -75,7 +75,7 @@ Show this table, then one line on how the stages follow each other. The order an
 | `unslop` | Always on. Every reply, plan, commit, PR and Jira comment goes through it | Nothing to type | Plain, short writing |
 | `plain-talk` | When a ticket, a result or a skill needs explaining in everyday words | `plain-talk PROJ-123`, `plain-talk ship` | A short story with a real-life example |
 
-The flow: the track skill (`fix-bug`, `build-feature` or `qa-return`) agrees the agent plan, takes the before proof its own way, and runs the shared `blueprint` steps to plan. `fix-bug` and `qa-return` call `reproduce` on the way. `ship` builds and calls `inspect`. The two loop until both are satisfied. `lane` runs the app for every live step. `ship` then opens the PR and updates Jira with the before and after proof, and `babysit` stays with the PR until it is merged. Updates (the progress table plus what was just fixed and why, in simple words) come every 10 minutes from 07:00 to 18:00, every hour until midnight, and not at all from midnight to 07:00, unless the user names another interval.
+The flow: the track skill (`fix-bug`, `build-feature` or `qa-return`) agrees the agent plan, takes the before proof its own way, and runs the shared `blueprint` steps to plan. `fix-bug` and `qa-return` call `reproduce` on the way. `ship` builds and calls `inspect`, and the two loop until both are satisfied. `lane` runs the app for every live step. `ship` then opens the PR and updates Jira with the before and after proof, and `babysit` stays with the PR until it is merged. Updates (the progress table plus what was just fixed and why, in simple words) come every 10 minutes from 07:00 to 18:00, every hour until midnight, and not at all from midnight to 07:00, unless the user names another interval.
 
 ## Which skill for this
 
@@ -83,7 +83,7 @@ For a task the pipeline covers, name the skill from the table above and the exac
 
 ## What does this skill do
 
-Read its `SKILL.md` and explain it in a few plain sentences, with an everyday example, when to use it and what to type.
+Read its `SKILL.md` and explain it in a few plain sentences with an everyday example: when to use it and what to type.
 
 ## Which skills do I have
 
@@ -94,7 +94,7 @@ Read its `SKILL.md` and explain it in a few plain sentences, with an everyday ex
    ```
 
    Add `--project <repo path>` for each repo the user is working in. Add `--agent claude|codex|cursor` to show one agent, or `--find <word>` to search. `--json` gives the raw records.
-2. Add the built-ins. Claude Code ships some skills inside the app (for example `code-review`, `simplify`, `loop`, `schedule`, `init`), with no file on disk. Compare this session's own skill list with the scanner output and add each skill the scan missed as a row marked "built-in (from this session)".
+2. Add the built-ins. Claude Code ships some skills inside the app (for example `code-review`, `simplify`, `loop`, `schedule`, `init`) with no file on disk. Compare this session's skill list with the scanner output and add each skill the scan missed as a row marked "built-in (from this session)".
 3. Show the tables grouped as the scanner groups them, then one line with the totals per agent.
 
 Rules for the listing:

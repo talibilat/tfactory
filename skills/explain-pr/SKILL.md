@@ -9,19 +9,19 @@ Never assume a requirement. Check Jira for the latest requirements before acting
 
 Explain a pull request and its comments to someone who has not read them. Read only: this skill changes nothing on GitHub.
 
-Write as `~/.agents/skills/unslop/SKILL.md` says: everyday words, short sentences, and a real-life example where it helps. Use no analogy unless the user asks for one, as `plain-talk` does. Keep a technical term only when the user will need it, with a few words on what it means.
+Write as `~/.agents/skills/unslop/SKILL.md` says: everyday words, short sentences, and a real-life example where it helps. Use no analogy unless the user asks, as `plain-talk` does. Keep a technical term only when the user will need it, with a few words on what it means.
 
-Keep it short: a few sentences for what it is, a compact table for what they ask, and a short list for what to do next. Add detail only when the user asks.
+Keep it short: a few sentences for what it is, a compact table for what they ask, a short list for what to do next. Add detail only when the user asks.
 
 ## To-do list
 
-Before the first step, make a temporary to-do list from this skill's steps, so nothing is forgotten:
+Before the first step, make a temporary to-do list from this skill's steps:
 
 ```
 python3 -I ~/.agents/skills/guide/scripts/todo.py new explain-pr --key <KEY> --from ~/.agents/skills/explain-pr/SKILL.md
 ```
 
-Leave out `--key` when the task has no key. Tick each item when its Done condition is met, with the evidence: `todo.py tick explain-pr --key <KEY> N --note "<proof>"`. Mark a stuck item with `todo.py block`, and add a step you find later with `todo.py add`. Show the list with every update. When the last item is ticked, the list deletes itself. See "To-do lists" in the conventions file.
+Leave out `--key` when the task has no key. Tick each item when its Done condition is met, with evidence: `todo.py tick explain-pr --key <KEY> N --note "<proof>"`. Mark a stuck item with `todo.py block`, and add a step you find later with `todo.py add`. Show the list with every update. The list deletes itself when the last item is ticked. See "To-do lists" in the conventions file.
 
 ## Steps
 

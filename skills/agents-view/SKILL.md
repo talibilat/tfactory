@@ -5,11 +5,11 @@ description: How to run and watch background Claude Code sessions with agent vie
 
 # agents-view
 
-Agent view (`claude agents`) is one screen listing every background session by state, so the user sees which ones need them without reading transcripts. Each background session is a full Claude Code conversation that keeps running with no terminal attached. Research preview. Source: https://code.claude.com/docs/en/agent-view
+Agent view (`claude agents`) is one screen listing every background session by state, so the user sees which ones need them without reading transcripts. Each background session is a full Claude Code conversation that runs with no terminal attached. Research preview. Source: https://code.claude.com/docs/en/agent-view
 
 ## When it fits
 
-Several separate jobs that run without the user watching, such as a bug fix, a PR review and a flaky-test hunt side by side. The user checks back when a row needs input or has a result. Sessions report only to the user; to pass findings between them, use `agents-messaging`.
+Several separate jobs that run unwatched, such as a bug fix, a PR review and a flaky-test hunt side by side. The user checks back when a row needs input or has a result. Sessions report only to the user; to pass findings between them, use `agents-messaging`.
 
 ## Using it
 
@@ -45,7 +45,7 @@ Working, Needs input, Idle, Completed, Failed, Stopped. Scripts read state with 
 ## How it behaves
 
 - A supervisor process hosts the sessions, so they survive closing the terminal.
-- Idle sessions left alone for about an hour may stop to free memory. They resume on the next attach or reply. Pin with `Ctrl+T` to keep one running.
+- Idle sessions may stop after about an hour to free memory, and resume on the next attach or reply. Pin with `Ctrl+T` to keep one running.
 - Before a session edits files in a git repo, Claude moves it into its own worktree under `.claude/worktrees/`. Turn that off per repo with `{"worktree": {"bgIsolation": "none"}}`. Outside git there is no isolation.
 - Background sessions read settings from their working folder. Put gateway settings in a settings file's `env` block so they reach every session.
 

@@ -5,11 +5,11 @@ description: Default start for every task when Claude is the main model. Checks 
 
 # agents-first
 
-Run this at the start of every task while Claude is the main model. When the work splits, ask the user before spinning up agents, then run the plan they pick.
+Run this at the start of every task while Claude is the main model. When the work splits, ask the user before starting agents, then run the plan they pick.
 
 ## 1. Does the task split?
 
-The task **splits** when any of these hold:
+The task **splits** when any of these is true:
 
 - It has two or more parts that don't depend on each other.
 - Answering means reading across many files, logs or web pages.
@@ -17,7 +17,7 @@ The task **splits** when any of these hold:
 - The cause is unclear and several theories can be tested at once.
 - The same change repeats across many files.
 
-A single quick step (one answer, a one-line edit), a chain where every step needs the last, or a back-and-forth with the user stays in this chat with no question asked.
+A quick single step (one answer, a one-line edit), a chain where each step needs the last, or a back-and-forth with the user stays in this chat. Ask nothing.
 
 Done when you can name each part, or know there is only one.
 
@@ -46,7 +46,7 @@ Ask with `AskUserQuestion` before you start any agent. One question with 2 to 4 
 
 Say in the question that every extra agent spends its own tokens.
 
-Follow the user's words instead of asking when this turn already says how to run the work ("use a workflow", "3 agents", "no agents", "full send", "don't ask"). When the session can't show a question (`claude -p`, or no `AskUserQuestion` tool), run the recommended plan and say so in one line.
+Skip the question when this turn already says how to run the work ("use a workflow", "3 agents", "no agents", "full send", "don't ask"). When the session can't show a question (`claude -p`, or no `AskUserQuestion` tool), run the recommended plan and say so in one line.
 
 Picking a workflow option counts as the user's opt-in to the `Workflow` tool.
 
@@ -54,8 +54,8 @@ Done when the user has picked an option, or their words already picked one.
 
 ## 4. Run it
 
-Read the skill for the approach they picked and follow it. Brief each agent as a peer: the goal, the files to read, what is already ruled out, and what done looks like. Give each agent that edits the repo its own worktree. Wait for the results and use them; work you handed to an agent stays with that agent.
+Read the skill for the approach they picked and follow it. Brief each agent as a peer: the goal, the files to read, what is already ruled out, and what done looks like. Give each agent that edits the repo its own worktree. Wait for the results and use them. Work you handed to an agent stays with that agent.
 
-The host's tool rules come first. When the host (for example T3 Code) names the tool for a background agent or an agent on another provider, use that tool.
+The host's tool rules come first: when the host (for example T3 Code) names the tool for a background agent or an agent on another provider, use that tool.
 
 Done when every agent has reported, their results are merged into one answer, and the user has seen it.

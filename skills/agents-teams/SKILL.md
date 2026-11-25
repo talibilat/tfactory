@@ -5,7 +5,7 @@ description: How to run Claude Code agent teams, from code.claude.com/docs/en/ag
 
 # agents-teams
 
-An agent team is one lead session that starts teammates, gives out tasks and merges the results. Teammates are full Claude sessions with their own context. They share a task list and message each other directly, and the user can talk to any of them. Experimental and off by default. Source: https://code.claude.com/docs/en/agent-teams
+An agent team is one lead session that starts teammates, assigns tasks and merges results. Teammates are full Claude sessions with their own context. They share a task list and message each other directly, and the user can talk to any of them. Experimental and off by default. Source: https://code.claude.com/docs/en/agent-teams
 
 ## When it fits
 
@@ -14,7 +14,7 @@ An agent team is one lead session that starts teammates, gives out tasks and mer
 - Debugging with competing theories, each teammate trying to disprove the others.
 - Work across front end, back end and tests, one owner each.
 
-Use a single session or subagents for work that must happen in order, edits to the same file, many dependencies, or routine tasks. Every teammate is a separate Claude, so cost grows with team size.
+Use a single session or subagents for work that must happen in order, edits to the same file, many dependencies, or routine tasks. Each teammate is a separate Claude, so cost grows with team size.
 
 | | Subagents | Agent team |
 |---|---|---|
@@ -29,7 +29,7 @@ Use a single session or subagents for work that must happen in order, edits to t
 { "env": { "CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS": "1" } }
 ```
 
-Watch out: while it is on, any subagent Claude gives a name starts as a teammate, so teams can form unasked. Setting the value to `"0"` turns that off at once. Teammates never start in `claude -p` or Agent SDK sessions.
+Watch out: while it is on, any named subagent starts as a teammate, so teams can form unasked. Setting the value to `"0"` turns that off at once. Teammates never start in `claude -p` or Agent SDK sessions.
 
 ## Running a team
 
@@ -53,7 +53,7 @@ Hooks that exit with code 2 send feedback and block: `TeammateIdle` keeps a team
 
 ## Sizing
 
-Start with 3 to 5 teammates and 5 to 6 tasks each. Each task should end in one clear deliverable, such as a function, a test file or a review. Split files so no two teammates edit the same one; teams don't isolate teammates in worktrees.
+Start with 3 to 5 teammates and 5 to 6 tasks each. End each task in one clear deliverable, such as a function, a test file or a review. Split files so no two teammates edit the same one; teams don't isolate teammates in worktrees.
 
 ## Limits
 

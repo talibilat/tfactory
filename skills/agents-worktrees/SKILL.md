@@ -5,7 +5,7 @@ description: How to isolate parallel Claude Code sessions and subagents in git w
 
 # agents-worktrees
 
-A git worktree is a separate folder with its own files and branch that shares the repo's history. Giving each session or subagent its own worktree stops parallel edits from colliding. Source: https://code.claude.com/docs/en/worktrees
+A git worktree is a separate folder with its own files and branch that shares the repo's history. One worktree per session or subagent stops parallel edits from colliding. Source: https://code.claude.com/docs/en/worktrees
 
 ## Starting one
 
@@ -24,7 +24,7 @@ Setup:
 
 ## Subagents in worktrees
 
-Ask Claude to "use worktrees for your agents", or add `isolation: worktree` to an agent file's frontmatter. Each gets a temporary worktree, removed when it finishes with no changes. One with changes stays until the periodic sweep can remove it safely.
+Ask Claude to "use worktrees for your agents", or add `isolation: worktree` to an agent file's frontmatter. Each gets a temporary worktree, removed when it finishes with no changes. One with changes stays until the periodic sweep can safely remove it.
 
 ## Base branch
 

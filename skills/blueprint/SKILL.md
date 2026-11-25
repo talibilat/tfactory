@@ -5,13 +5,13 @@ description: The shared planning steps of the pipeline, used by the three tracks
 
 Never assume a requirement. Check Jira for the latest requirements before acting. If a requirement is unclear or cannot be verified, ask the user in plain language before proceeding with work that depends on it.
 
-Be strict and vigilant. Do only what this skill says, in its order, and never step outside the system (see System rules in the conventions file).
+Be strict and vigilant. Do only what this skill says, in its order. Never step outside the system (see System rules in the conventions file).
 
 # blueprint
 
-Understand the task, prove the problem, research it, and write a plan that no builder can misread. Change no code except the failing repro test.
+Understand the task, prove the problem, research it, and write a plan no builder can misread. Change no code except the failing repro test.
 
-There are three tracks, each with its own skill that calls the steps below in its order and adds its own first steps and its own definition of done:
+Three tracks each have a skill that calls the steps below in order, and adds its own first steps and definition of done:
 
 | Track | Skill | For |
 |---|---|---|
@@ -21,17 +21,17 @@ There are three tracks, each with its own skill that calls the steps below in it
 
 **A bug is never planned before it has been reproduced.** If it will not reproduce, the work stops at step 5 with a short report of why and how to get unblocked.
 
-First read `~/.agents/skills/blueprint/references/conventions.md`. It holds the pipeline order, the Jira ids, repos, naming, the progress board, the evidence folders, the agent rules and the ask-first list. The user's message outranks everything here (see "Your message comes first" in that file). If you are not Claude Code inside T3, read its "Using these skills from another agent" table and swap the tools as it says.
+First read `~/.agents/skills/blueprint/references/conventions.md`. It holds the pipeline order, Jira ids, repos, naming, the progress board, evidence folders, agent rules and the ask-first list. The user's message outranks everything here (see "Your message comes first" in that file). If you are not Claude Code inside T3, swap the tools as its "Using these skills from another agent" table says.
 
 ## To-do list
 
-Before the first step, make a temporary to-do list from this skill's steps, so nothing is forgotten:
+Before the first step, make a temporary to-do list from this skill's steps:
 
 ```
 python3 -I ~/.agents/skills/guide/scripts/todo.py new blueprint --key <KEY> --from ~/.agents/skills/blueprint/SKILL.md
 ```
 
-Leave out `--key` when the task has no key. Tick each item when its Done condition is met, with the evidence: `todo.py tick blueprint --key <KEY> N --note "<proof>"`. Mark a stuck item with `todo.py block`, and add a step you find later with `todo.py add`. Show the list with every update. When the last item is ticked, the list deletes itself. See "To-do lists" in the conventions file.
+Leave out `--key` when the task has no key. Tick each item when its Done condition is met, with evidence: `todo.py tick blueprint --key <KEY> N --note "<proof>"`. Mark a stuck item with `todo.py block`, and add a later step with `todo.py add`. Show the list with every update. The list deletes itself when the last item is ticked. See "To-do lists" in the conventions file.
 
 ## 1. Find the task
 
@@ -44,7 +44,7 @@ Read the user's message and the whole chat above it. Take the first row that fit
 | A bare `blueprint` in a chat that already holds a problem, an error, a ticket or a request | The most recent problem in the chat above, whatever it is. Restate it in 2 lines and start | None |
 | A bare `blueprint` in an empty chat | Chosen with cards, as `references/cards.md` says | 1 to 4 short cards |
 
-A Jira ticket means Jira mode. Anything else means standalone mode from the conventions file: skip the Jira-only steps and run every other step.
+A Jira ticket means Jira mode. Anything else means standalone mode from the conventions file: skip the Jira-only steps, run every other step.
 
 **Pick the track** when a track skill did not call you. Take the first row that fits, then read that track's skill and run it from its first step, passing along everything the user wrote ("just blueprint" included). The track skill calls these steps back.
 
@@ -58,7 +58,7 @@ A Jira ticket means Jira mode. Anything else means standalone mode from the conv
 
 "just blueprint", "only blueprint" or "plan only" means stop after step 9. Any other call carries on into `ship` without asking.
 
-Start the progress board: `progress.py init <KEY>`, as the Progress board section of the conventions file says. Update it at the end of every step below, and post updates on the schedule in that section.
+Start the progress board with `progress.py init <KEY>` (Progress board section of the conventions file). Update it at the end of every step, and post updates on the schedule in that section.
 
 Done when you can state the task in 2 lines and name its mode.
 
@@ -67,7 +67,7 @@ Done when you can state the task in 2 lines and name its mode.
 Do all three checks.
 
 1. Fetch the ticket again. If it has an assignee other than me, or its status means someone finished or is working on it, stop and say so. In the card flow, offer the next ticket.
-2. Search T3 chats for the key with `t3_thread_search` and `t3_thread_list` (`titleContains`). Read each other chat that mentions it. If that chat is working on the ticket, tell the user and stop. If its state is unclear, send one question with `t3_thread_send` ("Are you working on <KEY>? Answer yes or no."), wait up to 5 minutes with `t3_thread_wait`, and count no answer as taken.
+2. Search T3 chats for the key with `t3_thread_search` and `t3_thread_list` (`titleContains`). Read each other chat that mentions it. If it is working on the ticket, tell the user and stop. If its state is unclear, send one question with `t3_thread_send` ("Are you working on <KEY>? Answer yes or no."), wait up to 5 minutes with `t3_thread_wait`, and count no answer as taken.
 3. Look for earlier work in every repo under the root folder in `setup.md`: branches named for the key, folders under `<root>/worktrees` and `<root>/archived-worktrees`, and `gh pr list -R <org>/<repo> --search "<KEY>" --state all`. An open PR or live branch owned by someone else counts as taken. A merged or closed PR, or an archive folder, is earlier work: note it for step 5.
 
 Then claim: write `claim` to the timeline, set the assignee to my accountId, move the ticket to "In Progress" by transition name, fetch it again to confirm, and rename the chat to the key and nothing else. If another chat claimed it a moment earlier, back out.
@@ -80,31 +80,31 @@ Done when Jira shows me as assignee and In Progress, and the chat carries the ke
 2. Note what proof the ticket itself carries. If the ticket or its comments hold UI screenshots, the before and after proof must be UI screenshots of the same screen.
 3. Trace the ticket to its requirement documents as `references/requirements.md` says, and read and update the project knowledge file.
 
-**The rule for every decision.** What the product must do comes only from words a BA wrote in Jira: the ticket, its parent chain, the epic, related tickets, linked pages and attachments. Those words are the single authority. You never fill a gap with a guess. A gap becomes a question under Blockers. How the code is built is your choice, and each such choice is backed by evidence from the code.
+**The rule for every decision.** What the product must do comes only from words a BA wrote in Jira: the ticket, its parent chain, the epic, related tickets, linked pages and attachments. Those words are the single authority. Never fill a gap with a guess. A gap becomes a question under Blockers. How the code is built is your choice, backed by evidence from the code.
 
 Done when the ticket file exists and every requirement you know of has a named source.
 
 ## 4. Task folder, worktrees and baseline
 
-Everything for this task lives in one folder, `<root>/worktrees/<KEY>/`, with one worktree per repo inside it (`fe`, `be`, `ai`, and so on, named in `setup.md`). Make it now. It is also the first item of the plan.
+Everything for the task lives in one folder, `<root>/worktrees/<KEY>/`, with one worktree per repo inside it (`fe`, `be`, `ai`, and so on, named in `setup.md`). Make it now. It is also the first item of the plan.
 
-1. Choose the repos yourself. Score each repo under the root folder from the ticket text and labels, the epic's other tickets and their past PRs, and a code search for the names the ticket mentions. Ask only when no repo stands out.
+1. Choose the repos yourself. Score each repo under the root folder from the ticket text and labels, the epic's other tickets and their past PRs, and a code search for names the ticket mentions. Ask only when no repo stands out.
 2. For each repo, make its worktree in the task folder (`<root>/worktrees/<KEY>/<short>`):
 
    ```
    ~/.agents/skills/blueprint/scripts/worktree.sh add <root> <KEY> <short> <repo-path> <branch>
    ```
 
-   It makes the folder on the first call, branches from the latest `origin/<default branch>`, and resumes a worktree that is already there. After a resume, run `sync-dev.sh` to bring it up to date with dev. Ask when the branch holds someone else's commits. Use the same branch name in every repo. Never create a worktree any other way or anywhere else.
+   It makes the folder on the first call, branches from the latest `origin/<default branch>`, and resumes an existing worktree. After a resume, run `sync-dev.sh` to catch up with dev. Ask when the branch holds someone else's commits. Use the same branch name in every repo. Never create a worktree any other way or anywhere else.
 3. Run the install command from the conventions table inside each worktree (`npm ci`, `uv sync`, never an upgrade).
-4. Run test, lint, typecheck and build in each. Keep pass or fail, counts and the names of failing tests. Record failures that existed before this change so they are not blamed on it. Leave them unfixed.
-5. **If the research or the plan later shows that another repo is needed**, add its worktree to the same folder with `worktree.sh add`, install, run its baseline, and add it to the plan's Task folder table. Do this before the plan is finished. Never move the task to a new folder.
+4. Run test, lint, typecheck and build in each. Keep pass or fail, counts and failing test names. Record failures that existed before this change so they are not blamed on it. Leave them unfixed.
+5. **If the research or the plan later shows another repo is needed**, add its worktree to the same folder with `worktree.sh add`, install, run its baseline, and add it to the plan's Task folder table before the plan is finished. Never move the task to a new folder.
 
 Done when `~/.agents/skills/blueprint/scripts/worktree.sh list <root> <KEY>` shows a clean worktree for every repo, each with a baseline row.
 
 ## 5. The track's before step (a hard gate)
 
-The track skill owns this step, because each track proves the starting point differently:
+The track skill owns this step, because each track proves the start differently:
 
 | Track | Before step | Where |
 |---|---|---|
@@ -112,13 +112,13 @@ The track skill owns this step, because each track proves the starting point dif
 | `feature` | The acceptance checklist with a BA source per criterion, and before pictures of the current screen | `build-feature` step 3 |
 | `qa-return` | `reproduce` replays QA's exact steps on dev and on a lane, and a verdict decides whether to go on | `qa-return` step 4 |
 
-Run that step from the track skill, then come back here. Every track ends it with `python3 -I ~/.agents/skills/blueprint/scripts/proof.py gate before <KEY>` printing `before gate: PASS`, unless the track stopped the work or nothing can run (a docs or config text change, with the reason on the board).
+Run that step from the track skill, then come back. Every track ends it with `python3 -I ~/.agents/skills/blueprint/scripts/proof.py gate before <KEY>` printing `before gate: PASS`, unless the track stopped the work or nothing can run (a docs or config text change, with the reason on the board).
 
 Done when the track's before step is done, or the track stopped the work with its report.
 
 ## 6. Research with sub-agents
 
-This is the most important step. Start every track below at once, one read-only sub-agent per track, as the Agents section of the conventions file says. Each agent gets a short brief with paths, writes its findings to `.scratch/<KEY>-research/<track>.md`, cites a source for every claim (ticket key, author and date, or `file:line`), and replies in 30 lines or fewer. End the turn while they run.
+This is the most important step. Start every track below at once, one read-only sub-agent per track (Agents section of the conventions file). Each agent gets a short brief with paths, writes its findings to `.scratch/<KEY>-research/<track>.md`, cites a source for every claim (ticket key, author and date, or `file:line`), and replies in 30 lines or fewer. End the turn while they run.
 
 | Track | It reads | It answers |
 |---|---|---|
@@ -129,7 +129,7 @@ This is the most important step. Start every track below at once, one read-only 
 | `code-<repo>` | One agent per repo: the code paths, callers, data flow and tests | A `file:line` map of where the behavior lives and what depends on it |
 | `tests-data` | Existing tests, fixtures, seeded accounts | What is covered, what is missing, what data the live run needs |
 
-Add the extra tracks the track skill names (`design` and `slices` for a feature, `qa-diff` for a QA return), and a track for every open question, one agent per question. Read each findings file yourself when it returns, and send a second agent wherever an answer is thin.
+Add the extra tracks the track skill names (`design` and `slices` for a feature, `qa-diff` for a QA return), and one agent per open question. Read each findings file yourself, and send a second agent wherever an answer is thin.
 
 Done when every question the ticket and the chat raise has an answer with a source, or is written down as a gap.
 
@@ -150,15 +150,15 @@ Done when every checklist line maps to a subpart, every decision row has its bac
 Run the plan check and the Jira grilling, then fix what they find.
 
 1. **Plan check.** A child reads the `ticket-prework-review` skill and pstack `blast-radius`, and scores the plan out of 100, as the template says. Below 90, fix the gaps and run it again.
-2. **Jira grilling.** A small question session, where the answers come only from Jira. Every decision about what the product must do is tested against what the BAs wrote.
+2. **Jira grilling.** Answers come only from Jira. Every decision about what the product must do is tested against what the BAs wrote.
 
-   1. **Write the questions.** You, or a child that has read the `grilling` skill, read the plan and the decision log and write 8 to 12 questions to `.scratch/<KEY>-reviews/grill-questions.md`. Ask one for each requirement decision and one for each risky assumption (edge cases, roles, limits, what must not change). Word each one neutrally, such as "What do the requirements say should happen when a course has no chapters?". Never include the plan's own answer or a hint of it.
-   2. **Start the answerer.** Start one fresh sub-agent (Sonnet medium) with the Atlassian tools, as the Agents section of the conventions file says. Give it only the ticket key, the paths of the questions file, the knowledge file and the output file `.scratch/<KEY>-reviews/grill.md`. Do not give it the plan, the decision log or any code. It answers under these rules:
-      - It answers only from Jira: the ticket, its comments, the parent chain, the epic and its related and linked tickets, Confluence pages, and attachments. It searches each of them for every question.
+   1. **Write the questions.** You, or a child that has read the `grilling` skill, read the plan and the decision log and write 8 to 12 questions to `.scratch/<KEY>-reviews/grill-questions.md`. Ask one per requirement decision and one per risky assumption (edge cases, roles, limits, what must not change). Word each neutrally, such as "What do the requirements say should happen when a course has no chapters?". Never include the plan's own answer or a hint of it.
+   2. **Start the answerer.** Start one fresh sub-agent (Sonnet medium) with the Atlassian tools, as the Agents section of the conventions file says. Give it only the ticket key and the paths of the questions file, the knowledge file and the output file `.scratch/<KEY>-reviews/grill.md`. Do not give it the plan, the decision log or any code. Its rules:
+      - Answer only from Jira: the ticket, its comments, the parent chain, the epic and its related and linked tickets, Confluence pages, and attachments. Search each for every question.
       - Every answer gives a source (ticket key with the author and date, Confluence page with its version, or attachment name) and the exact quote. The BAs' words count most (see `setup.md`).
-      - When Jira does not say, the answer is `NOT IN JIRA`, with what was searched. It never guesses, never infers a rule, never reads code, and never fills a gap from common sense.
-      - When two sources disagree, it gives both and says which is newer.
-      - It writes a table `| Q | Question | Answer | Source | Quote | Decision | Plan agrees |` and leaves the last two columns for you.
+      - When Jira does not say, the answer is `NOT IN JIRA`, with what was searched. Never guess, infer a rule, read code, or fill a gap from common sense.
+      - When two sources disagree, give both and say which is newer.
+      - Write a table `| Q | Question | Answer | Source | Quote | Decision | Plan agrees |` and leave the last two columns for the planner.
       If the child has no Jira tools, do this part yourself under the same rules and say so.
    3. **Compare every answer with the plan.** For each row, fill in `Decision` (the decision numbers it checks) and `Plan agrees`:
       - `yes`: the plan already does what the answer says.
@@ -177,7 +177,7 @@ Done when the plan check has no open plan problem, `grounded.py check` prints `g
 
 Post in chat, in this order:
 
-1. **What I understood.** Run the `plain-talk` skill in brief mode on the task, the root cause and the plan, and post its answer first. It is about 150 words: what is wrong, why it happens, how it will be fixed. For a feature: what is asked, and how it will be built. The template says how.
+1. **What I understood.** Run the `plain-talk` skill in brief mode on the task, the root cause and the plan, and post its answer first. About 150 words: what is wrong, why it happens, how it will be fixed. For a feature: what is asked, and how it will be built. The template says how.
 2. Blockers and open questions, or "No blockers".
 3. The before proof: the screenshots from `before/`, each with a one-line caption.
 4. The plan, trimmed to what a person needs: problem, approach, subparts, baseline, risks. Keep it to a short table or list.

@@ -5,24 +5,22 @@ description: Deep investigation of a Jira ticket and its sub-tasks, ending in a 
 
 Never assume a requirement. Check Jira for the latest requirements before acting. If a requirement is unclear or cannot be verified, ask the user in plain language before proceeding with work that depends on it.
 
-Be strict and vigilant. Do only what this skill says, in its order, and never step outside the system (see System rules in the conventions file).
+Do only what this skill says, in its order, and never step outside the system (see System rules in the conventions file).
 
 # deep-spec
 
-Find out what a ticket really needs, prove it against the code and Jira, and rewrite its spec. This is the investigation phase only. Nobody builds anything here. The spec is what every later skill builds from, so a wrong line here becomes wrong code later.
+Find out what a ticket really needs, prove it against the code and Jira, and rewrite its spec. This is the investigation phase only. Nobody builds anything here. Every later skill builds from the spec, so a wrong line here becomes wrong code later.
 
 First read `~/.agents/skills/blueprint/references/conventions.md` and `~/.agents/skills/blueprint/references/requirements.md`. Where they conflict with this skill, this skill wins: it posts nothing, changes no code and claims nothing without the user's yes. The user's message outranks both (see "Your message comes first").
 
 ## Size the work first (the most important rule)
 
-Match the effort to the ticket. Do the work the ticket needs and no more.
-
-In step 1, size the ticket as **light** or **full**. It is **full** when either of these holds. Otherwise it is **light**.
+Match the effort to the ticket: do the work it needs and no more. In step 1, size the ticket as **full** when either of these holds, otherwise **light**.
 
 - **The work is big.** More than one repo, more than 3 sub-tasks, a new switch or provider, or in-flight PRs that touch the same code.
 - **The security risk is big.** It touches secrets or keys, login and roles, one user's data reaching another, payments, outbound calls to new services, or personal data in logs.
 
-Show the size and the reason in the step 1 card. The user can change it.
+Show the size and reason in the step 1 card. The user can change it.
 
 | Step | Light | Full |
 |---|---|---|
@@ -35,23 +33,23 @@ Show the size and the reason in the step 1 card. The user can change it.
 | 9: council | Judges everything at once: the research, the claims, the decisions and the spec. One round, a second only for a proven finding | Run on the spec |
 | 10, 11: approve, post, hand off | Run | Run |
 
-The rules below hold in both sizes. In light mode, I still open every source the spec uses, and the council takes the place of the verify agents. Hard decisions and every post still wait for the user's yes.
+The rules below hold in both sizes. In light mode you still open every source the spec uses, and the council takes the place of the verify agents. Hard decisions and every post still wait for the user's yes.
 
-If the investigation shows the ticket is bigger or riskier than it looked, stop, tell the user why in two lines, and ask before switching to full.
+If the ticket turns out bigger or riskier than it looked, stop, tell the user why in two lines, and ask before switching to full.
 
 ## The rules
 
-1. **The ticket text is a claim, not a fact.** Every statement in the ticket and its sub-tasks gets checked against the code, the history and the BA's words, and marked confirmed, wrong or unclear.
-2. **Every line of the spec has a source.** A source is one of three things. A BA's words in Jira (ticket, comment, Confluence page or attachment, with the quote). The user's yes in this chat (an approval id from `approvals.md`). Code evidence (`file:line` at a named commit). Anything else becomes an open question.
-3. **Agents find and propose. Only the user decides.** A sub-agent's finding is a lead until it passes the proof check below. A sub-agent never makes a decision, and neither do you when the decision is a hard one.
-4. **Nothing leaves this Mac without the user's yes on the exact text.** That covers Jira descriptions, comments, assignee, status, links and new tickets, and anything on GitHub. Messages to other T3 chats are allowed (step 7).
+1. **The ticket text is a claim, not a fact.** Check every statement in the ticket and its sub-tasks against the code, the history and the BA's words, and mark it confirmed, wrong or unclear.
+2. **Every line of the spec has a source.** A source is one of three things: a BA's words in Jira (ticket, comment, Confluence page or attachment, with the quote), the user's yes in this chat (an approval id from `approvals.md`), or code evidence (`file:line` at a named commit). Anything else becomes an open question.
+3. **Agents find and propose. Only the user decides.** A sub-agent's finding is a lead until it passes the proof check below. A sub-agent never makes a decision, and neither do you when it is a hard one.
+4. **Nothing leaves this Mac without the user's yes on the exact text.** This covers Jira descriptions, comments, assignee, status, links, new tickets and anything on GitHub. Messages to other T3 chats are allowed (step 7).
 
 ## Proof
 
 A finding is **proven** only when all of these hold:
 
 - It cites a source someone else can open: `repo/path/file.ts:42` at the commit written in the research file, a Jira key with author, date and the exact quote, a PR number with the file and line of its diff, or a command and its pasted output.
-- You opened that source yourself and it says what the finding says. Re-read the `file:line` in the worktree, or fetch the Jira text again. A quote must match word for word.
+- You opened that source yourself and it says what the finding says: re-read the `file:line` in the worktree, or fetch the Jira text again. A quote must match word for word.
 - For a finding the spec relies on (a requirement, a design choice, a security risk, a bug, an overlap with other work), someone who did not write it tried to disprove it and failed. That is a verify agent in step 6 (full), or the council in step 9 (light).
 
 Mark every finding `proven`, `refuted` or `unproven` in its research file. Only `proven` findings go into the spec. An `unproven` one becomes an open question or is dropped, and the update says which.
@@ -60,7 +58,7 @@ Never accept "probably", "likely" or "should" from an agent as proof. Ask it for
 
 ## Hard decisions
 
-A hard decision always goes to the user, written as "Asking questions" says, with the options, your recommendation and the proof for each option. It is never made by you or an agent, even when the answer looks obvious. A decision is hard when it does any of these:
+A hard decision always goes to the user, written as "Asking questions" says, with the options, your recommendation and the proof for each option. Neither you nor an agent makes it, even when the answer looks obvious. A decision is hard when it does any of these:
 
 - changes what the ticket or a sub-task asks for, or drops, merges or adds a sub-task
 - picks between two or more ways to build it (where the switch lives, a new class or an existing one, sync or async)
@@ -101,23 +99,23 @@ Everything lives in `.scratch/<KEY>-spec/` in this chat's project folder:
 python3 -I ~/.agents/skills/guide/scripts/todo.py new deep-spec --key <KEY> --from ~/.agents/skills/deep-spec/SKILL.md
 ```
 
-Tick each item when its Done condition is met, with the evidence. See "To-do lists" in the conventions file.
+Tick each item when its Done condition is met, with evidence. See "To-do lists" in the conventions file.
 
 ## Updates
 
-Ask in the step 1 card whether the user wants running updates. The default is no.
+Ask in the step 1 card whether the user wants running updates (default no).
 
 - **No:** post only what needs the user (questions, hard decisions, blockers, approval cards) and the final report.
 - **Yes:** also post a short update after every step: what was found, why it matters, what is next, and the to-do list.
 
-Either way, write in plain words as `unslop` says, explain anything technical with `plain-talk` in brief mode, and lead with what is waiting on the user.
+Either way, write in plain words as `unslop` says, explain technical points with `plain-talk` in brief mode, and lead with what waits on the user.
 
 ## Asking questions
 
-Every question to the user is written for someone who does not read code. This covers cards, grilling rounds and approval requests. A BA question in a Jira draft follows the same rules.
+Write every question to the user (cards, grilling rounds, approval requests) for someone who does not read code. A BA question in a Jira draft follows the same rules.
 
-1. **A little background first.** Two or three short sentences: what this part of the app does today, what the ticket wants, and why a choice is needed now.
-2. **The question in everyday words.** Name things the way a person sees them ("the upload button", "where the files are stored"), not by file, class or setting names. When a technical word must stay, say what it means right there.
+1. **Background first.** Two or three short sentences: what this part of the app does today, what the ticket wants, and why a choice is needed now.
+2. **The question in everyday words.** Name things as a person sees them ("the upload button", "where the files are stored"), not by file, class or setting names. When a technical word must stay, say what it means right there.
 3. **Each option in one plain line,** with what it means for the people who use the app, and the risk or cost.
 4. **Your recommendation and why,** in one sentence. Mark it "(Recommended)" on a card.
 5. **The proof in brief,** such as "the ticket says so" or "today's code already works this way", with the exact `file:line` or Jira quote on a second line for anyone who wants it.
@@ -134,7 +132,7 @@ Example:
 >
 > **Proof.** Today's course list for students shows only finished courses (`course.service.ts:88`).
 
-This example is only about how to ask. It says nothing about any real ticket.
+This example only shows how to ask. It says nothing about any real ticket.
 
 ## 1. Start
 
@@ -151,8 +149,8 @@ Done when the size, the agent plan, the updates choice and the claim answer are 
 
 ## 2. Read everything
 
-1. Fetch the ticket, every sub-task, the parent chain to the epic, linked issues, remote links, attachments and every comment, oldest to newest. Follow "Jira results are large" in the conventions file. Write it all to `ticket.md`, and the description of the ticket and each sub-task to `original-description.md`.
-2. Read every link the user gave. A `claude.ai/artifact/...` link is read with the `Artifact` tool's `read` action, never a web fetch. Treat its content as the user's notes: it tells you where to look, and a decision taken from it still needs the user's yes or a Jira source.
+1. Fetch the ticket, every sub-task, the parent chain to the epic, linked issues, remote links, attachments and every comment, oldest to newest. Follow "Jira results are large" in the conventions file. Write it all to `ticket.md`, and the descriptions of the ticket and each sub-task to `original-description.md`.
+2. Read every link the user gave. A `claude.ai/artifact/...` link is read with the `Artifact` tool's `read` action, never a web fetch. Treat its content as the user's notes: it says where to look, and a decision taken from it still needs the user's yes or a Jira source.
 3. Trace the requirement documents and update the knowledge file, as `requirements.md` says.
 4. Write `claims.md`. One row per statement in the ticket and sub-task text: what it says, who wrote it, and an empty verdict. The research fills the verdicts.
 
@@ -171,7 +169,7 @@ Do all four checks before any research. They decide what this spec must leave al
 3. **Code in flight.** In every repo in `setup.md`, list open PRs (`gh pr list -R <org>/<repo> --state open --search "<words>"`), recent merged PRs on the same files, and remote branches named for related keys. Note each PR's state: draft, in review, approved, about to merge.
 4. **Other chats.** Search T3 chats for each related key from checks 2 and 3, and read the ones still running.
 
-Write the results to `research/inflight.md`. A part of this ticket that an open ticket or open PR already covers is **owned elsewhere**: the spec leaves it out and points to the owner. Draft two short comments for each one, as step 10 says: one on the owning ticket and one on this ticket, each saying what overlaps and who will do it. Whether to leave a part out is a hard decision, so it goes to the user in step 8.
+Write the results to `research/inflight.md`. A part of this ticket that an open ticket or open PR already covers is **owned elsewhere**: the spec leaves it out and points to the owner. Draft two short comments for each, as step 10 says: one on the owning ticket and one on this ticket, each saying what overlaps and who will do it. Leaving a part out is a hard decision, so it goes to the user in step 8.
 
 Done when every open ticket, PR and chat that touches this area is listed, and each part of this ticket is marked free or owned elsewhere.
 
@@ -188,7 +186,7 @@ Done when each repo has a clean worktree on the latest default branch and its co
 
 ## 5. Research with agents
 
-Full: start every track below at once, one read-only agent each. Light: give the same tracks to 2 or 3 agents (for example the Jira tracks to one, the code, extension and in-flight tracks to another, security and bugs to a third). Start them all at once, as the Agents section of the conventions file says. Each brief gives the paths to `ticket.md`, `claims.md`, `inflight.md` and the worktrees, the Proof section of this skill, and says: read only, no edits, no posts, no decisions, every finding with a source that meets the Proof rules, findings written to `research/<track>.md`, a reply of 30 lines or fewer. End the turn while they run.
+Full: one read-only agent per track below. Light: give the same tracks to 2 or 3 agents (for example the Jira tracks to one, the code, extension and in-flight tracks to another, security and bugs to a third). Start all agents at once, as the Agents section of the conventions file says. Each brief gives the paths to `ticket.md`, `claims.md`, `inflight.md` and the worktrees and the Proof section of this skill, and says: read only, no edits, no posts, no decisions, every finding with a source that meets the Proof rules, findings written to `research/<track>.md`, a reply of 30 lines or fewer. End the turn while they run.
 
 | Track | It answers |
 |---|---|
@@ -201,13 +199,13 @@ Full: start every track below at once, one read-only agent each. Light: give the
 | `security` | A threat model for every trust boundary the change touches: secrets and keys, auth and roles, tenant and user data isolation, input checks, outbound calls, logging of personal data, failure modes. Each risk with `file:line` and the options to handle it |
 | `bugs` | Likely bugs in the code paths the change touches and in the in-flight PRs: wrong defaults, missing error handling, race conditions, silent fallbacks, missing tests. Each with `file:line` and the exact way to trigger it |
 
-Read each file when it returns, and send a second agent wherever an answer is thin. A bug in the old code is reported, never fixed here. If an open ticket already covers it, link to that ticket. If none does, draft a bug ticket for step 10.
+Read each file when it returns, and send a second agent where an answer is thin. Report a bug in the old code, never fix it here. If an open ticket already covers it, link to that ticket. If none does, draft a bug ticket for step 10.
 
 Done when every track has a file and every row of `claims.md` has a verdict.
 
 ## 6. Verify the research
 
-Light: skip this step. Open the source of every finding the spec will use yourself, mark it `proven` or `unproven`, and let the council in step 9 try to disprove it. Mark the step skipped on the to-do list with the reason "light".
+Light: skip this step, with the reason "light" on the to-do list. Open the source of every finding the spec will use yourself, mark it `proven` or `unproven`, and let the council in step 9 try to disprove it.
 
 Full: start one fresh agent per research file, at once. None of them may verify its own track. Each brief gives one research file, the worktrees, the Jira key and the Proof section, and says: try to disprove every finding. Open every cited source, check every quote word for word against Jira, check every `file:line` against the named commit, and look for code or tickets the finding missed. Mark each finding `proven`, `refuted` (with the counter-evidence) or `unproven` (with what is missing), in `reviews/verify-<track>.md`.
 
@@ -231,9 +229,9 @@ Done when every blocker has an answer, a recorded no-reply, or a question for th
 
 ## 8. Grill the decisions, with a panel and then the user
 
-Read the `grilling` skill (`grill-me` points to the same one). It runs the user interview. The panel below feeds it.
+Read the `grilling` skill (`grill-me` points to the same one). It runs the user interview and the panel below feeds it.
 
-Light: do item 1, skip the panel (items 2 and 3), then grill the user (items 4 and 5) on the hard decisions and open questions from the draft. A fact you are missing still goes to one fact-finder agent.
+Light: do item 1, skip the panel (items 2 and 3), then grill the user (items 4 and 5) on the hard decisions and open questions from the draft. A missing fact still goes to one fact-finder agent.
 
 1. **List the decisions.** Write `reviews/decisions-draft.md`: every decision the spec needs, every hard decision from the research, and every open question. Give each its options and the proven findings behind each option.
 2. **Start the grill panel.** Three fresh Sonnet agents at once, each with one angle. Each reads `ticket.md`, the research files, the verify files and `decisions-draft.md`, and writes the hardest questions it can find to `reviews/grill-panel-<angle>.md`. For each question: why it matters, the options, its recommended answer, and the proof for that answer under the Proof rules. A question with no proof for any option says so.
@@ -248,7 +246,7 @@ Light: do item 1, skip the panel (items 2 and 3), then grill the user (items 4 a
    - **A fact:** start a fact-finder agent per question with the Proof rules. Its answer goes through the same check as step 6 before it is used.
    - **The BA's:** what the product must do. It goes into the BA comment draft for step 10.
    - **The user's:** every hard decision, and every question about how to build, what to leave out and which risks to accept.
-4. **Grill the user** round by round, as the `grilling` skill says, with every question written as "Asking questions" says. Each question shows the background, the options, your recommendation, the proof for it in one line, and what happens if the user picks differently. Ask only the questions whose facts are settled. Questions waiting on a fact-finder go in a later round.
+4. **Grill the user** round by round, as the `grilling` skill says, with every question written as "Asking questions" says. Each question shows the background, the options, your recommendation, its proof in one line, and what happens if the user picks differently. Ask only the questions whose facts are settled. Questions waiting on a fact-finder go in a later round.
 5. **Record every answer.** A yes or a changed answer becomes an `approvals.md` row with the user's exact words. An answer that changes an earlier decision updates the draft and may raise new questions for the next round.
 
 Done when every question (from the panel, or from the draft in light mode) is answered by the user with an approval id, waiting in a BA comment draft, or listed as open questions, and the user confirms you share the same understanding.
@@ -263,14 +261,14 @@ Done when every question (from the panel, or from the draft in light mode) is an
    ```
 
 3. **Jira-only grilling** (full only). Run blueprint step 8.2 against the spec (`~/.agents/skills/blueprint/SKILL.md`): neutral questions in `reviews/grill-questions.md`, a fresh answerer that reads only Jira, answers in `reviews/grill.md`. Where Jira disagrees with the spec, that is a hard decision for the user. A `NOT IN JIRA` answer on a requirement with no approval id becomes an open question.
-4. **Council.** Run the `council` skill on `spec.md` with the research and verify folders. Ask it to look hardest at security, likely bugs, the switch design and anything that touches work owned elsewhere. Light: it judges everything at once, so also give it `claims.md` and `reviews/decisions-draft.md`, and ask it to try to disprove every finding the spec uses and to check every BA quote against Jira. One round, and a second only when the first brought a proven finding. Verify each finding yourself under the Proof rules. A finding that would change a decision goes back to the user as a hard decision.
+4. **Council.** Run the `council` skill on `spec.md` with the research and verify folders. Ask it to look hardest at security, likely bugs, the switch design and anything touching work owned elsewhere. Light: it judges everything at once, so also give it `claims.md` and `reviews/decisions-draft.md`, and ask it to try to disprove every finding the spec uses and to check every BA quote against Jira. One round, and a second only when the first brought a proven finding. Verify each finding yourself under the Proof rules. A finding that would change a decision goes back to the user as a hard decision.
 5. Run the check again after the changes.
 
 Done when `spec-check.py` prints PASS, every Jira disagreement and council finding is settled by the user or dropped as refuted, and the council round brought no new proven finding.
 
 ## 10. Show it, get approval, then post
 
-1. **Explain it in chat.** In plain words, about 200 words: what the ticket is really for, what the investigation changed compared with the ticket text, what is left out and who owns it, the security and bug risks, the decisions the user made, and the open questions. Then the path to `spec.md`.
+1. **Explain it in chat.** In about 200 plain words: what the ticket is really for, what the investigation changed compared with the ticket text, what is left out and who owns it, the security and bug risks, the decisions the user made, and the open questions. Then the path to `spec.md`.
 2. **List every Jira change** waiting in `drafts/`, one line each: the new description for this ticket, sub-task description changes, the BA question comment, the overlap comments on this ticket and on each owning ticket, and any new bug ticket. Show the exact text of each with `send_to_user` before asking.
 3. **Ask for approval** with one card per change, or one card for the batch when the user prefers. Options: "Post as shown", "Change it" and "Do not post". Only "Post as shown" posts. A change goes back into the draft and is shown again.
 4. **Post only what was approved.** Record each approval in `approvals.md` first. When editing a description, keep the old text at the bottom under "Original description (kept for history)". Fetch each ticket again after posting and confirm the text landed.

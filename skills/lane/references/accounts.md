@@ -1,6 +1,6 @@
 # Test accounts in every lane
 
-`lane up` seeds each lane's own database with the repo's `prisma/seed-e2e.ts`. These are public fixture passwords from the uok-be repo, not secrets. Every lane has the same accounts, but each lane has its own data, so a change in lane 2 never shows up in lane 3.
+`lane up` seeds each lane's own database with the repo's `prisma/seed-e2e.ts`. These are public fixture passwords from the uok-be repo, not secrets. Every lane has the same accounts but its own data, so a change in lane 2 never shows up in lane 3.
 
 | Role | Email | Password | 2FA |
 |---|---|---|---|
@@ -18,7 +18,7 @@ More fixtures exist: `e2e-inst-student-1..3@example.com`, `e2e-page-professor-01
 
 ## Admin TOTP
 
-There is no TOTP bypass in the app. The first `lane login <N> e2e-admin@example.com` enrols a generated secret through `/auth/2fa/setup/*` and stores it in `<lane>/.totp-secrets.json` (mode 600). Later logins compute the code. For a manual browser login, `lane totp <N> <email>` prints the current 6-digit code. A code works once per 30-second step, so the scripts wait for the next step when a code was just used.
+The app has no TOTP bypass. The first `lane login <N> e2e-admin@example.com` enrols a generated secret through `/auth/2fa/setup/*` and stores it in `<lane>/.totp-secrets.json` (mode 600). Later logins compute the code. For a manual browser login, `lane totp <N> <email>` prints the current 6-digit code. A code works once per 30-second step, so the scripts wait for the next step after a code was just used.
 
 ## Seeded courses the professor owns
 

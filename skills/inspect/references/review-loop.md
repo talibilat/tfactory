@@ -1,6 +1,6 @@
 # Review loop
 
-The four code reviewers, the score, the QA validation child and the fix rounds. `inspect` runs the checks. `ship` makes the fixes between rounds.
+The four code reviewers, the score, the QA validation child and the fix rounds. `inspect` runs the checks. `ship` fixes between rounds.
 
 ## The four reviewers
 
@@ -13,9 +13,9 @@ The four code reviewers, the score, the QA validation child and the fix rounds. 
 
 ## Start a round
 
-Start the reviewers of the round together with `delegate_task`, role `review`, at the same moment as the live run. Round 1 runs all four. Later rounds run only the reviewers that still have open findings. When those pass, run one last pass with all four.
+Start the round's reviewers together with `delegate_task`, role `review`, at the same time as the live run. Round 1 runs all four. Later rounds run only the reviewers that still have open findings. When those pass, run one last pass with all four.
 
-Target: Cursor `auto-smart` on `cost` first. A Cursor error or limit means run that reviewer again on Sonnet medium. See the conventions file.
+Target: Cursor `auto-smart` on `cost` first. On a Cursor error or limit, run that reviewer again on Sonnet medium. See the conventions file.
 
 Brief for every reviewer, with paths and no pasted text:
 
@@ -36,13 +36,13 @@ Read <the reviewer's SKILL.md path, found as above> and follow it, with these ov
 For postwork also include its score out of 100 and its PASS, PASS WITH MANUAL CHECKS or FAIL gate.
 ```
 
-After the reviewers return, run `git -C <wt> status --porcelain` and compare it with the state before the round. A reviewer that edited anything is a failed reviewer. Revert its edits and run it again on Sonnet.
+After the reviewers return, run `git -C <wt> status --porcelain` and compare it with the state before the round. A reviewer that edited anything failed. Revert its edits and run it again on Sonnet.
 
 ## Combine and score
 
-1. Read each findings file. Merge duplicates (same file and line, or same claim) into one row and keep the strongest proof.
-2. Check every merged finding yourself. Read the cited lines or re-run the proof command. Mark it verified or dropped (with the reason). Dropped findings do not cost points.
-3. Findings with "in-scope no" go to a Follow-ups list. They go in the PR body, not into the fix plan, and do not cost points.
+1. Read each findings file. Merge duplicates (same file and line, or same claim) into one row with the strongest proof.
+2. Check every merged finding yourself: read the cited lines or re-run the proof command. Mark it verified or dropped (with the reason). Dropped findings cost no points.
+3. Findings with "in-scope no" go to a Follow-ups list in the PR body, not into the fix plan, and cost no points.
 4. Score starts at 100. For each verified in-scope finding subtract 25 (Critical), 10 (High), 5 (Medium) or 2 (Low). Never go below 0.
 5. 100 means no verified in-scope findings and postwork says PASS. PASS WITH MANUAL CHECKS counts as not passed until the manual checks are done and recorded. The live test is a gate, not points. Without a PASS in `<KEY>-live-test.md` for the current commit, the result is NOT PASSED, whatever the score.
 
@@ -57,7 +57,7 @@ Then: `Combined score: <n>/100`, the postwork score and gate on one line, and `L
 
 ## Edge cases that Jira does not cover
 
-Never decide these yourself. A requirement that is not in Jira is the user's call.
+Never decide these yourself. A requirement not in Jira is the user's call.
 
 1. Show one table in chat, worst first, in plain words:
 
@@ -65,7 +65,7 @@ Never decide these yourself. A requirement that is not in Jira is the user's cal
    |---|---|---|---|---|---|
 
    Give a real example for each, with the ticket key: "For ARPP-123, a teacher saves a course with no chapters and the page shows a blank error."
-2. Ask the user for an opinion with one card per case, or one card with a list when there are more than four. Options: "Handle it in this PR (Recommended)" when the failure is likely or serious, "Add a note to the same ticket and ship without it", "Ignore, with the reason". Put your recommendation first and say why in one sentence. Never create a new ticket. A follow-up goes as a comment on the same ticket.
+2. Ask the user for an opinion with one card per case, or one card with a list when there are more than four. Options: "Handle it in this PR (Recommended)" when the failure is likely or serious, "Add a note to the same ticket and ship without it", "Ignore, with the reason". Put your recommendation first, with one sentence of why. Never create a new ticket. A follow-up goes as a comment on the same ticket.
 3. Wait for the answer. Meanwhile finish every check that does not depend on it.
 4. Write each decision, with the user's words, into `<KEY>-decisions.md`. "Handle it" goes into the phase 2 plan with a checklist line and a test. "Note on the ticket" goes into the Jira comment and the PR body. "Ignore" is recorded and not raised again for this ticket.
 5. A case the user already decided in an earlier round is not asked again.
@@ -106,7 +106,7 @@ Show a short plan in chat before touching code:
 
 ## Round limits
 
-Up to 5 rounds run without asking the user, as long as each round moves in the right direction. Moving in the right direction means the score goes up, or the open findings are new ones and fewer than before.
+Up to 5 rounds run without asking the user, while each round moves in the right direction: the score goes up, or the open findings are new and fewer than before.
 
 - Round 1 fails: phase 2 plan, fix, round 2.
 - Round 2 fails: stop fixing. Write the diagnosis, then correct the plan.

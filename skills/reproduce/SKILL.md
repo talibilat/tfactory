@@ -9,7 +9,7 @@ Be strict and vigilant. Do only what this skill says, in its order, and never st
 
 # reproduce
 
-See the bug with your own eyes, and keep the proof. A bug that has not happened in front of you is not reproduced, and nothing gets planned on it. The before proof you save here is half of the before and after comparison that goes to Jira and GitHub, so it is the most important output of this skill. The before screenshots taken here are shown next to the after screenshots in the PR and in Jira, so both must come from the same steps.
+See the bug with your own eyes, and keep the proof. A bug that has not happened in front of you is not reproduced, and nothing gets planned on it. The before proof you save here is the most important output of this skill. It is half of the before and after comparison in the PR and in Jira, so before and after must come from the same steps.
 
 Read `~/.agents/skills/blueprint/references/conventions.md` first. If `blueprint` called you, the ticket file, the worktrees and the baseline already exist. If the user called you alone, run `blueprint` steps 1 to 4 first, then continue here, and hand back to `blueprint` step 6 when you finish.
 
@@ -17,13 +17,13 @@ Update the `repro` row of the progress board after each step.
 
 ## To-do list
 
-Before the first step, make a temporary to-do list from this skill's steps, so nothing is forgotten:
+Before the first step, make a temporary to-do list from this skill's steps:
 
 ```
 python3 -I ~/.agents/skills/guide/scripts/todo.py new reproduce --key <KEY> --from ~/.agents/skills/reproduce/SKILL.md
 ```
 
-Leave out `--key` when the task has no key. Tick each item when its Done condition is met, with the evidence: `todo.py tick reproduce --key <KEY> N --note "<proof>"`. Mark a stuck item with `todo.py block`, and add a step you find later with `todo.py add`. Show the list with every update. When the last item is ticked, the list deletes itself. See "To-do lists" in the conventions file.
+Leave out `--key` when the task has no key. Tick each item when its Done condition is met, with evidence: `todo.py tick reproduce --key <KEY> N --note "<proof>"`. Mark a stuck item with `todo.py block`. Add a step you find later with `todo.py add`. Show the list with every update. The list deletes itself when the last item is ticked. See "To-do lists" in the conventions file.
 
 ## 1. Write the repro steps
 
@@ -37,7 +37,7 @@ Where: <lane URL, page or command>   Account and data: <role, fixture, file>
 | # | Action | Expected (correct behavior, with its source) | What the report says happens | Proof file name |
 ```
 
-Number the proof file names (`01-open-course.png`, `02-save-error.png`). The after proof reuses the same names. If the ticket shows UI screenshots, the steps go through the UI and the proof is UI screenshots of the same screens.
+Number the proof file names (`01-open-course.png`, `02-save-error.png`). The after proof reuses them. If the ticket shows UI screenshots, the steps go through the UI and the proof is UI screenshots of the same screens.
 
 Done when a person could follow the steps without reading the ticket.
 
@@ -50,33 +50,33 @@ Look for earlier work on this problem.
 
 Merge both into `.scratch/<KEY>-history.md`. With no earlier work, write "No earlier work found" and what you searched.
 
-When earlier work exists, this is a repeat bug. Pick one verdict and give the evidence in 3 lines or fewer: old fix incomplete, a later change broke it, different root cause, or never really fixed. If the old and new tickets have no link, add "Relates" with `createIssueLink`. If the old PR is still open, reuse its branch and rebase only after asking. If it is merged or closed, keep the new branch. When `qa-return` called you, the history is the ticket's own merged PRs: add no Jira link, and the branch stays the earlier one that `qa-return` restored.
+Earlier work means a repeat bug. Pick one verdict and give the evidence in 3 lines or fewer: old fix incomplete, a later change broke it, different root cause, or never really fixed. If the old and new tickets have no link, add "Relates" with `createIssueLink`. If the old PR is still open, reuse its branch and rebase only after asking. If it is merged or closed, keep the new branch. When `qa-return` called you, the history is the ticket's own merged PRs: add no Jira link, and the branch stays the earlier one that `qa-return` restored.
 
 Done when `<KEY>-history.md` exists.
 
 ## 3. Reproduce it live, step by step
 
-Reproduce in the live environment only: a running copy of the app. Before you start a local copy, sync every repo with dev: `~/.agents/skills/lane/scripts/sync-dev.sh <worktree> ...`. A local copy is never behind dev. A local one counts: Docker, and for Aruva a `lane` (a private Docker copy) built from the current default branch. For other apps, start the app from the worktree with its own Docker or run command. A deployed dev environment also counts when the report was made there. Follow `<KEY>-repro.md` one step at a time and check each step's result before taking the next. Write the environment on the second line of `<KEY>-repro.md`, for example `Live environment: lane 2 from uok-be abc1234, uok-fe def5678`.
+Reproduce in the live environment only: a running copy of the app. Before you start a local copy, sync every repo with dev: `~/.agents/skills/lane/scripts/sync-dev.sh <worktree> ...`. A local copy is never behind dev. A local copy counts: Docker, and for Aruva a `lane` (a private Docker copy) built from the current default branch. For other apps, start the app from the worktree with its own Docker or run command. A deployed dev environment also counts when the report was made there. Follow `<KEY>-repro.md` one step at a time and check each step's result before the next. Write the environment on the second line of `<KEY>-repro.md`, for example `Live environment: lane 2 from uok-be abc1234, uok-fe def5678`.
 
-**Use the real thing, where you can watch it.** Run the app in Docker (a `lane` for Aruva) and drive it in real Google Chrome on this computer, with a visible window, one step at a time, taking each screenshot as the behavior happens. `lane shot` and the flows open a visible Chrome window by default. Do not use a background or headless script or a recorded flow, unless there is no other option. In that case write the reason on the `Method:` line (`Method: headless script because <reason>`). The proof gate rejects a script method with no reason.
+**Use the real thing, where you can watch it.** Run the app in Docker (a `lane` for Aruva) and drive it in real Google Chrome on this computer, with a visible window, one step at a time, taking each screenshot as the behavior happens. `lane shot` and the flows open a visible Chrome window by default. Do not use a background or headless script or a recorded flow unless there is no other option. Then write the reason on the `Method:` line (`Method: headless script because <reason>`). The proof gate rejects a script method with no reason.
 
-- **UI first.** For Aruva use the `lane` skill: claim a lane built from the worktrees and drive the real UI. For other apps use the browser tools from the conventions file. You may use the user's computer and terminal freely for this.
+- **UI first.** For Aruva use the `lane` skill: claim a lane built from the worktrees and drive the real UI. For other apps use the browser tools from the conventions file. You may use the user's computer and terminal freely.
 - **Terminal otherwise.** When the bug has no screen (API, worker, CLI, data), reproduce it with real calls and commands against that same running app.
 - If an old regression test exists, run it and say why it did not catch this case.
 
 Try up to 3 different approaches or 30 minutes: another account or role, other data or file, another route to the same screen, a different browser, the exact commit the report names. Correct `<KEY>-repro.md` whenever the real steps differ from the report.
 
-Only the live environment counts. The wrong behavior must happen in front of you in the running app. The ticket text, a reading of the code, a unit test, a mock and a static check never make it reproduced, and neither does production (never reproduce a bug on production). If the live environment cannot be started (Docker or a lane will not come up, a key or service is missing), the result is `Reproduced: no` with that blocker as the reason. Never fall back to reading the code.
+Only the live environment counts. The wrong behavior must happen in front of you in the running app. The ticket text, a reading of the code, a unit test, a mock and a static check never make it reproduced, and neither does production (never reproduce a bug on production). If the live environment cannot start (Docker or a lane will not come up, a key or service is missing), the result is `Reproduced: no` with that blocker as the reason. Never fall back to reading the code.
 
 Done when `Reproduced: yes` is written because the wrong behavior happened in front of you on the current default branch, or the timebox ran out and you go to step 4.
 
 ## 4. If it will not reproduce: name the blocker, then fix it
 
-Nothing moves forward until the bug reproduces. Do not stop at the first failure, and do not report yet. Find out what blocks you and clear it yourself. Up to 3 rounds, each one a new attempt:
+Nothing moves forward until the bug reproduces. Do not stop at the first failure or report yet. Find what blocks you and clear it yourself, in up to 3 rounds, each a new attempt:
 
 1. Name the blocker in one line, from the table.
 2. Do what the table says.
-3. Run the steps again, in the live environment.
+3. Run the steps again in the live environment.
 
 | Blocker | You do |
 |---|---|
@@ -92,7 +92,7 @@ Nothing moves forward until the bug reproduces. Do not stop at the first failure
 When a round makes it reproduce, go on to step 5. When 3 rounds fail, or the blocker needs the user:
 
 1. Set the first line of `<KEY>-repro.md` to `Reproduced: no` (or `already fixed`). Save what you tried under `before/`, close every window and tab, and give the lane back.
-2. Post a short report in chat, 8 lines or fewer, in plain words, and save it at the end of `<KEY>-repro.md`:
+2. Post a short plain-words report in chat, 8 lines or fewer, and save it at the end of `<KEY>-repro.md`:
 
    ```
    Could not reproduce <KEY>
@@ -113,9 +113,9 @@ Save into `.scratch/<KEY>-evidence/before/`, using the file names from `<KEY>-re
 - The logs for the failing action: backend and AI logs (`lane logs N <service>`), the browser console and the failed network request, saved as `.txt`.
 - `commit.txt` with the commit of each repo the app was built from.
 
-Save each screenshot at the moment the bug shows. Never overwrite `before/` later, because the after proof is compared against it. It lives in `.scratch/<KEY>-evidence/before/`, and stays there until the PR is merged and is then archived.
+Save each screenshot at the moment the bug shows. Never overwrite `before/` later, because the after proof is compared against it. It stays in `.scratch/<KEY>-evidence/before/` until the PR is merged, then is archived.
 
-Then call the `proof` skill in `before` mode. It captures the UI first (terminal output only for a step with no UI), writes what is being looked at and what was asked for each step, and builds the picture with the before on the left and the after still empty. Pass it:
+Then call the `proof` skill in `before` mode. It captures the UI first (terminal output only for a step with no UI), writes what is being looked at and what was asked for each step, and builds the picture with the before on the left and the after empty. Pass it:
 
 > `proof before <KEY>. Steps are in .scratch/<KEY>-repro.md. Live environment: <lane or URL>. Method: visible Chrome. Capture the UI first, and terminal output only for a step with no UI. Fill the left half only.`
 
@@ -125,7 +125,7 @@ Strip tokens, secrets and personal data. Close every browser window and tab you 
 python3 -I ~/.agents/skills/blueprint/scripts/proof.py gate before <KEY>
 ```
 
-It checks the result, the live environment and method lines, that every step has a real screenshot, and that the logs exist. Paste its last line in chat.
+It checks the result, the live environment and method lines, that every step has a real screenshot and that the logs exist. Paste its last line in chat.
 
 Done when the gate prints `before gate: PASS` (it includes the `proof` before check), and no window or lane is left open.
 
@@ -143,7 +143,7 @@ Set the first line of `<KEY>-repro.md` to `Reproduced: yes`. Reply to the caller
 
 ## The annotated pair
 
-The before and after pictures are built by the `proof` skill: before on the left, after on the right, every change circled and numbered, what is being looked at and what was asked written on the picture, and a verdict against the requirements. `reproduce` calls it in `before` mode (left half only) and `ship` and `inspect` call it in `after` mode. See `proof` for the tool and the prompts.
+The `proof` skill builds the before and after pictures: before on the left, after on the right, every change circled and numbered, what is being looked at and what was asked written on the picture, and a verdict against the requirements. `reproduce` calls it in `before` mode (left half only). `ship` and `inspect` call it in `after` mode. See `proof` for the tool and the prompts.
 
 ## Proof gate, no exceptions
 
@@ -151,7 +151,7 @@ No PR, no Jira comment, no Jira attachment and no ticket move until the before a
 
 1. Every step has a `before/` and an `after/` screenshot of the live app (UI whenever the bug shows in the UI). Logs, transcripts and text are extra, never a replacement.
 2. `proof.py gate before` and `gate after` both print PASS. The gate fully decodes each image, rejects blank, tiny or corrupt files and files that are not PNG, JPEG or WebP.
-3. Open every image yourself (Read it) and check it shows the right screen, the bug on the before side, and the fixed behavior on the after side. A page that only shows a login, an error page, a blank screen or the wrong course is not proof. Retake it.
+3. Open every image yourself (Read it) and check it shows the right screen, the bug on the before side and the fixed behavior on the after side. A page that only shows a login, an error page, a blank screen or the wrong course is not proof. Retake it.
 4. After you upload to GitHub or Jira, download or open the uploaded image and check it renders. A broken image link or a corrupted upload counts as not published. Fix it, then re-check.
 5. If you cannot produce the screenshots (lane will not start, key invalid, blocked), stop and tell the user why. Do not open the PR or comment on Jira without them. Only the user can waive this, by saying "skip proof" in the call.
 
@@ -162,5 +162,6 @@ No PR, no Jira comment, no Jira attachment and no ticket move until the before a
 - Never report `Reproduced: yes`, or move on, before `gate before` prints PASS.
 - Never use a background or headless script when visible Chrome or Docker works.
 - Never keep a terminal screenshot as the only proof of a UI bug.
-- Never leave a browser window, tab or lane open.
+- Never leave a browser window, tab or lane open. Close the lane with `lane down N` the moment the before proof and logs are saved, also when the bug does not reproduce.
+- Never start Docker by hand or force a lane. Wait in the `lane up` queue when memory is short.
 - Never push in this skill.

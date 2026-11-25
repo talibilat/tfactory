@@ -23,11 +23,16 @@ All options take --dir (default .scratch). Boxes use the 900 pixel wide view tha
 """
 import argparse
 import json
+import os
 import re
 import sys
 import textwrap
 import time
 from pathlib import Path
+
+runtime = Path(__file__).resolve().parents[3] / ".venv"
+if __name__ == "__main__" and (runtime / "bin/python").is_file() and Path(sys.prefix) != runtime:
+    os.execv(runtime / "bin/python", [str(runtime / "bin/python"), "-I", __file__, *sys.argv[1:]])
 
 from PIL import Image, ImageChops, ImageDraw, ImageFont
 

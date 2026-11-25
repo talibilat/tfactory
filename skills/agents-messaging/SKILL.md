@@ -5,7 +5,7 @@ description: How Claude Code sessions message each other, from code.claude.com/d
 
 # agents-messaging
 
-Cross-session messaging lets one of the user's Claude Code sessions send plain text to another, on this machine, on another machine or in the cloud. A message is text one Claude writes, never the sender's history or files. On by default from v2.1.224 (v2.1.234 on native Windows). Source: https://code.claude.com/docs/en/cross-session-messaging
+Cross-session messaging lets one of the user's Claude Code sessions send plain text to another, on this machine, another machine or the cloud. A message is text the sender writes, never its history or files. On by default from v2.1.224 (v2.1.234 on native Windows). Source: https://code.claude.com/docs/en/cross-session-messaging
 
 ## When it fits
 
@@ -18,7 +18,7 @@ To move a whole conversation, resume the session instead.
 
 ## Sending
 
-Find the target with `ListAgents`, then send with `SendMessage`. The user can name the target with an @-mention (`@api-worker`, or `@"release notes"` for names with spaces). When several sessions share a name, use the short identifier from the listing. `/list-agents` (or `/peers`) shows what the session can reach.
+Find the target with `ListAgents`, then send with `SendMessage`. The user can name the target with an @-mention (`@api-worker`, or `@"release notes"` for names with spaces). When sessions share a name, use the short identifier from the listing. `/list-agents` (or `/peers`) shows what the session can reach.
 
 For one notice when a session on this machine next goes idle or exits, use `SendMessage` with `notify_when_idle`. Only the main conversation can ask, and only for sessions on this machine. Unanswered subscriptions drop after 12 hours.
 
@@ -31,7 +31,7 @@ For one notice when a session on this machine next goes idle or exits, use `Send
 
 ## Inbound controls
 
-`crossSessionInbound` decides what a session does with arriving messages: `accept` delivers, `hold` shows a notice and waits for approval, `refuse` drops. With no value set, a session that bypasses permission prompts holds messages from prompting sessions for approval, and the reverse. Held messages wait up to `dialogExpiry` (5 minutes by default).
+`crossSessionInbound` sets what a session does with arriving messages: `accept` delivers, `hold` shows a notice and waits for approval, `refuse` drops. With no value set, a session that bypasses permission prompts holds messages from prompting sessions for approval, and the reverse. Held messages wait up to `dialogExpiry` (5 minutes by default).
 
 `isolatePeerMachines: true` asks for approval before any message leaves this machine, even in bypass mode.
 
@@ -49,4 +49,4 @@ Sessions on other machines or in the cloud appear only while this session is con
 
 ## Limits
 
-Plain text only, about one million characters per message, rapid bursts refused at the sender, and at most 50 queued messages per receiver. Repeat loops between two sessions throttle themselves.
+Plain text only, about one million characters per message, at most 50 queued messages per receiver. The sender refuses rapid bursts, and repeat loops between two sessions throttle themselves.

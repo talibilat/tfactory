@@ -9,24 +9,24 @@ Never assume a requirement. Check Jira for the latest requirements before acting
 
 Explain a ticket and its comments to someone who has not read them. Read only: this skill changes nothing in Jira.
 
-Write as `~/.agents/skills/unslop/SKILL.md` says: everyday words, short sentences, and a real-life example where it helps. Use no analogy unless the user asks for one, as `plain-talk` does. Keep a technical term only when the user will need it, with a few words on what it means.
+Write as `~/.agents/skills/unslop/SKILL.md` says: everyday words, short sentences, and a real-life example where it helps. Use no analogy unless the user asks, as `plain-talk` does. Keep a technical term only when the user will need it, with a few words on what it means.
 
-Keep it short: a few sentences for what it is, a compact table for what they ask, and a short list for what to do next. Add detail only when the user asks.
+Keep it short: a few sentences for what it is, a compact table for what they ask, a short list for what to do next. Add detail only when the user asks.
 
 ## To-do list
 
-Before the first step, make a temporary to-do list from this skill's steps, so nothing is forgotten:
+Before the first step, make a temporary to-do list from this skill's steps:
 
 ```
 python3 -I ~/.agents/skills/guide/scripts/todo.py new explain-jira --key <KEY> --from ~/.agents/skills/explain-jira/SKILL.md
 ```
 
-Leave out `--key` when the task has no key. Tick each item when its Done condition is met, with the evidence: `todo.py tick explain-jira --key <KEY> N --note "<proof>"`. Mark a stuck item with `todo.py block`, and add a step you find later with `todo.py add`. Show the list with every update. When the last item is ticked, the list deletes itself. See "To-do lists" in the conventions file.
+Leave out `--key` when the task has no key. Tick each item when its Done condition is met, with evidence: `todo.py tick explain-jira --key <KEY> N --note "<proof>"`. Mark a stuck item with `todo.py block`, and add a step you find later with `todo.py add`. Show the list with every update. The list deletes itself when the last item is ticked. See "To-do lists" in the conventions file.
 
 ## Steps
 
 1. **Rename the chat** to `JC <KEY>` (`t3_thread_update`, `rename`). Example: `JC ARPP-4372`.
-2. **Read the ticket.** Take the key from the link. Fetch the summary, description, status, assignee, priority, parent and links, and every comment with its author and date. Jira results are large: follow "Jira results are large" in `~/.agents/skills/blueprint/references/conventions.md`. Open the screenshots and attachments the comments point to. Read the parent ticket's summary for context.
+2. **Read the ticket.** Take the key from the link. Fetch the summary, description, status, assignee, priority, parent and links, and every comment with its author and date. Follow "Jira results are large" in `~/.agents/skills/blueprint/references/conventions.md`. Open the screenshots and attachments the comments point to. Read the parent ticket's summary for context.
    Done when you have read every comment, oldest to newest.
 3. **Explain, in this order:**
    1. **What this ticket is.** 3 to 5 sentences: what is wrong or wanted, who it affects, and where it stands now.

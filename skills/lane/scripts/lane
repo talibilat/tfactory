@@ -3,15 +3,39 @@
 # Run `lane help` for usage. Config: ${TTL_CONFIG:-$HOME/.config/ttl/aruva.env}.
 set -euo pipefail
 
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+SCRIPT="${BASH_SOURCE[0]}"
+while [ -L "$SCRIPT" ]; do
+  TARGET="$(readlink "$SCRIPT")"
+  case "$TARGET" in /*) SCRIPT="$TARGET";; *) SCRIPT="$(dirname "$SCRIPT")/$TARGET";; esac
+done
+SCRIPT_DIR="$(cd "$(dirname "$SCRIPT")" && pwd)"
+if [ "${1:-}" = compose ]; then
+  shift
+  exec python3 -I "$SCRIPT_DIR/compose-lane.py" "$@"
+fi
+
 CONFIG="${TTL_CONFIG:-$HOME/.config/ttl/aruva.env}"
+if [ ! -f "$CONFIG" ]; then
+  case "${1:-help}" in
+    help|-h|--help) exec python3 -I "$SCRIPT_DIR/compose-lane.py" --help;;
+  esac
+fi
 [ -f "$CONFIG" ] || { echo "lane: no config at $CONFIG (see references/setup.md)" >&2; exit 2; }
 # shellcheck disable=SC1090
 set -a; . "$CONFIG"; set +a
 : "${LANES_HOME:?}" "${BASE_PROJECT:?}" "${BASE_DIR:?}" "${BE_BASE_IMAGE:?}" "${AI_BASE_IMAGE:?}" "${FE_BASE_IMAGE:?}"
-PORT_BASE="${PORT_BASE:-20000}"; MAX_LANES="${MAX_LANES:-6}"; MIN_FREE_MIB="${MIN_FREE_MIB:-1800}"; STALE_HOURS="${STALE_HOURS:-6}"
-BUILD_MIN_FREE_MIB="${BUILD_MIN_FREE_MIB:-4000}"; BUILD_WAIT_MIN="${BUILD_WAIT_MIN:-45}"
-mkdir -p "$LANES_HOME"
+PORT_BASE="${PORT_BASE:-20000}"; MAX_LANES="${MAX_LANES:-3}"; MIN_FREE_MIB="${MIN_FREE_MIB:-4096}"; STALE_HOURS="${STALE_HOURS:-2}"
+BUILD_MIN_FREE_MIB="${BUILD_MIN_FREE_MIB:-6000}"; BUILD_WAIT_MIN="${BUILD_WAIT_MIN:-45}"
+# Memory rules. A lane is admitted only when Docker has MIN_FREE_MIB free AND the Mac has at least
+# MIN_MEM_LEVEL_PCT percent of memory free (the number `memory_pressure` prints). Heavy host jobs
+# (lint, tests, builds) need HEAVY_MIN_MEM_LEVEL_PCT and run with a capped Node heap.
+MIN_MEM_LEVEL_PCT="${MIN_MEM_LEVEL_PCT:-20}"; HEAVY_MIN_MEM_LEVEL_PCT="${HEAVY_MIN_MEM_LEVEL_PCT:-25}"; HEAVY_HEAP_MIB="${HEAVY_HEAP_MIB:-3072}"
+QUEUE_WAIT_MIN="${QUEUE_WAIT_MIN:-90}"; DOCKER_VM_MAX_MIB="${DOCKER_VM_MAX_MIB:-20480}"
+# Per-container memory caps inside a lane. An idle lane uses about 1.9 GB in total, measured on lane 1.
+LANE_MEM_API="${LANE_MEM_API:-2g}"; LANE_MEM_WORKER="${LANE_MEM_WORKER:-768m}"; LANE_MEM_AI="${LANE_MEM_AI:-1536m}"
+LANE_MEM_FE="${LANE_MEM_FE:-1g}"; LANE_MEM_PG="${LANE_MEM_PG:-512m}"; LANE_MEM_REDIS="${LANE_MEM_REDIS:-128m}"
+LANE_MEM_NEO4J="${LANE_MEM_NEO4J:-1g}"; LANE_MEM_QDRANT="${LANE_MEM_QDRANT:-512m}"; LANE_MEM_BFF_REDIS="${LANE_MEM_BFF_REDIS:-64m}"
+mkdir -p "$LANES_HOME" "$LANES_HOME/logs"
 
 die() { echo "lane: $*" >&2; exit 1; }
 say() { echo "lane: $*" >&2; }
@@ -41,6 +65,91 @@ docker_free_mib() {
   used=$(docker stats --no-stream --format '{{.MemUsage}}' | awk '{v=$1; m=1; if (v ~ /GiB/) m=1024; else if (v ~ /KiB/) m=1/1024; else if (v ~ /B$/ && v !~ /iB/) m=1/1048576; gsub(/[A-Za-z]/,"",v); s+=v*m} END{printf "%d", s}')
   echo $((total - used))
 }
+
+# Percent of Mac memory that is free, the same number `memory_pressure` prints. Higher is better.
+mac_mem_level() { sysctl -n kern.memorystatus_level 2>/dev/null || echo 100; }
+swap_used_mib() { sysctl -n vm.swapusage 2>/dev/null | awk '{for(i=1;i<=NF;i++) if($i=="used"){v=$(i+2); gsub(/M/,"",v); printf "%d", v}}'; }
+mac_total_mib() { echo $(( $(sysctl -n hw.memsize) / 1048576 )); }
+
+# Prints why work must wait and returns 1, or prints nothing and returns 0.
+# $1 = MiB of free Docker memory the work needs (0 when it does not use Docker).
+mem_blocker() {
+  local need="$1" level free
+  level=$(mac_mem_level)
+  if [ "$level" -lt "$MIN_MEM_LEVEL_PCT" ]; then echo "the Mac has ${level}% memory free, below ${MIN_MEM_LEVEL_PCT}%"; return 1; fi
+  if [ "$need" -gt 0 ]; then
+    free=$(docker_free_mib)
+    if [ "$free" -lt "$need" ]; then echo "Docker has ${free} MiB free, below ${need} MiB"; return 1; fi
+  fi
+  return 0
+}
+up_blocker() {
+  local used; used=$(ls -d "$LANES_HOME"/lane-[0-9]* 2>/dev/null | wc -l | tr -d ' ')
+  if [ "$used" -ge "$MAX_LANES" ]; then echo "all $MAX_LANES lanes are in use"; return 1; fi
+  mem_blocker "$MIN_FREE_MIB"
+}
+heavy_blocker() {
+  local level; level=$(mac_mem_level)
+  if [ "$level" -lt "$HEAVY_MIN_MEM_LEVEL_PCT" ]; then echo "the Mac has ${level}% memory free, below ${HEAVY_MIN_MEM_LEVEL_PCT}%"; return 1; fi
+  return 0
+}
+
+# --- queue ------------------------------------------------------------------------------------
+# First come, first served. One folder per queue (docker, heavy) holds one ticket file per waiting
+# agent, named <nanoseconds>-<pid>. Only the first live ticket may start, and it keeps its ticket
+# until its work is going, so two agents never both measure "free" memory and both start.
+QUEUE_DIR="$LANES_HOME/.queue"
+QTICKET=""
+queue_leave() { if [ -n "$QTICKET" ]; then rm -f "$QTICKET"; fi; QTICKET=""; return 0; }
+queue_live() { # name -> live ticket names in order, dead ones removed
+  local t
+  for t in $(ls "$QUEUE_DIR/$1" 2>/dev/null | sort); do
+    if kill -0 "${t##*-}" 2>/dev/null; then echo "$t"; else rm -f "$QUEUE_DIR/$1/$t"; fi
+  done
+}
+queue_wait() { # name label blocker-function
+  local name="$1" label="$2" blocker="$3" waited=0 why="" me head pos total last_msg=-60 last_sweep=-300
+  mkdir -p "$QUEUE_DIR/$name"
+  me="$(python3 -c 'import time; print(time.time_ns())' 2>/dev/null || echo "$(date +%s)000000000")-$$"
+  QTICKET="$QUEUE_DIR/$name/$me"; printf '%s\n' "$label" > "$QTICKET"
+  while true; do
+    head=$(queue_live "$name" | head -1)
+    if [ "$head" = "$me" ]; then
+      if why=$("$blocker"); then return 0; fi
+      # First in line but blocked: free memory by removing lanes nobody has used for STALE_HOURS.
+      if [ $((waited - last_sweep)) -ge 300 ]; then last_sweep=$waited; cmd_sweep --yes >/dev/null 2>&1 || true; fi
+    else
+      why="waiting for '$(cat "$QUEUE_DIR/$name/$head" 2>/dev/null)' to start"
+    fi
+    if [ $((waited - last_msg)) -ge 60 ]; then
+      pos=$(queue_live "$name" | grep -n "^$me$" | cut -d: -f1); total=$(queue_live "$name" | wc -l | tr -d ' ')
+      say "queued for $name, place ${pos:-?} of $total: $why. Waited $((waited / 60)) min."
+      last_msg=$waited
+    fi
+    sleep 10; waited=$((waited + 10))
+    [ $waited -lt $((QUEUE_WAIT_MIN * 60)) ] || die "still queued for $name after $QUEUE_WAIT_MIN min ($why). Stop, tell the user, and do not force it."
+  done
+}
+
+# Runs when the script ends for any reason, including Ctrl-C: give back the queue place, and close a
+# lane that did not finish starting or that `lane run` was holding, so nothing is left running.
+UP_LANE=""; UP_DONE=false; RUN_LANE=""; NO_PRUNE=""
+on_exit() {
+  local rc=$?
+  trap - EXIT INT TERM
+  queue_leave
+  if [ -n "$UP_LANE" ] && [ "$UP_DONE" != true ] && [ -d "$(lane_dir "$UP_LANE")" ]; then
+    say "lane $UP_LANE did not finish starting. Closing it so it does not hold memory. Log: $LANES_HOME/logs/lane-$UP_LANE.up.log"
+    cmd_down "$UP_LANE" || true
+  fi
+  if [ -n "$RUN_LANE" ] && [ -d "$(lane_dir "$RUN_LANE")" ]; then
+    say "closing lane $RUN_LANE"; cmd_down "$RUN_LANE" || true
+  fi
+  exit "$rc"
+}
+trap on_exit EXIT
+trap 'exit 130' INT
+trap 'exit 143' TERM
 
 # --- shared services -------------------------------------------------------------------------
 # The base stack's stateless services (parser, extractor, PII) join each lane's own default network
@@ -89,10 +198,11 @@ with_build_lock() { # cmd...
   done
   echo $$ > "$BUILD_LOCK/pid"
   waited=0
-  while [ "$(docker_free_mib)" -lt "$BUILD_MIN_FREE_MIB" ]; do
-    [ $waited -eq 0 ] && say "waiting for ${BUILD_MIN_FREE_MIB} MiB free Docker memory before building (now $(docker_free_mib))"
+  local why
+  until why=$(mem_blocker "$BUILD_MIN_FREE_MIB"); do
+    [ $waited -eq 0 ] && say "waiting to build: $why (a build needs ${BUILD_MIN_FREE_MIB} MiB free in Docker)"
     sleep 30; waited=$((waited + 30))
-    if [ $waited -ge $((BUILD_WAIT_MIN * 60)) ]; then rm -rf "$BUILD_LOCK"; die "not enough free Docker memory to build; free a lane or raise Docker's memory"; fi
+    if [ $waited -ge $((BUILD_WAIT_MIN * 60)) ]; then rm -rf "$BUILD_LOCK"; die "not enough memory to build ($why); close a lane and try again"; fi
   done
   local rc=0; "$@" || rc=$?
   rm -rf "$BUILD_LOCK"
@@ -113,6 +223,7 @@ write_compose() { # N be_dir ai_dir fe_dir be_build ai_build fe_build split
   for w in worker-syllabus-ai worker-kag worker-media worker-runtime worker-light; do
     worker_block+="  $w:
     container_name: !reset null
+    mem_limit: $LANE_MEM_WORKER
     profiles: [split]
     image: $be_img
 $( [ "$beb" = true ] || echo "    build: !reset null
@@ -151,11 +262,14 @@ x-lane-env: &lane-env
 services:
   postgres:
     container_name: !reset null
+    mem_limit: $LANE_MEM_PG
     ports: !override ["127.0.0.1:$PG:5432"]
   redis:
     container_name: !reset null
+    mem_limit: $LANE_MEM_REDIS
   api:
     container_name: !reset null
+    mem_limit: $LANE_MEM_API
     image: $be_img
 $be_build_block
     ports: !override ["127.0.0.1:$API:3000"]
@@ -167,6 +281,7 @@ $be_build_block
       PROCESS_ROLE: $role
 $worker_block  neo4j:
     container_name: !reset null
+    mem_limit: $LANE_MEM_NEO4J
     ports: !override ["127.0.0.1:$NEO_HTTP:7474", "127.0.0.1:$NEO_BOLT:7687"]
     environment:
       NEO4J_AUTH: neo4j/\${NEO4J_PASSWORD}
@@ -195,6 +310,7 @@ YAML
 services:
   ai-backend:
     container_name: !reset null
+    mem_limit: $LANE_MEM_AI
 $ai_build_block
     env_file: !override ["$BASE_DIR/uok-ai/.env"]
     ports: !override ["127.0.0.1:$AI:8000"]
@@ -206,6 +322,7 @@ $ai_build_block
       - SENTRY_DSN=
   qdrant:
     container_name: !reset null
+    mem_limit: $LANE_MEM_QDRANT
     ports: !override ["127.0.0.1:$QD:6333", "127.0.0.1:$QDG:6334"]
 networks:
   aruva_network: !override
@@ -225,6 +342,7 @@ YAML
 services:
   frontend:
     container_name: !reset null
+    mem_limit: $LANE_MEM_FE
 $fe_build_block
     ports: !override ["127.0.0.1:$FE:3000"]
     environment:
@@ -234,6 +352,7 @@ $fe_build_block
       SENTRY_DSN: ""
   bff-redis:
     container_name: !reset null
+    mem_limit: $LANE_MEM_BFF_REDIS
 networks:
   aruva_network: !override
     name: lane-${n}_aruva_network
@@ -255,10 +374,18 @@ YAML
 # --- commands --------------------------------------------------------------------------------
 usage() {
   cat <<'EOF'
-lane up <label> [--be DIR] [--ai DIR] [--fe DIR] [--split] [--owner TEXT] [--force]
-    Claim a free lane, start it and seed test accounts. --be/--ai/--fe build that repo from a worktree;
+lane up <label> [--be DIR] [--ai DIR] [--fe DIR] [--split] [--owner TEXT] [--dry-run] [--force]
+    Join the queue when Docker or the Mac is short of memory or all lanes are taken, then claim a free lane, start it and seed test accounts. --be/--ai/--fe build that repo from a worktree;
     repos you leave out reuse the base dev image. --split runs the five backend workers as separate
     containers (default: one backend process does API + all workers). Prints the lane number and URLs.
+    A lane that fails to start is closed again automatically. --dry-run checks the compose file and the
+    memory caps without starting anything. --force skips the memory check and the queue; do not use it.
+lane run <label> [up options] -- <command...>
+    lane up, run the command with LANE_N set, then lane down, even if the command fails or is stopped.
+lane mem                        Docker, Mac memory and swap, lane caps and the queues, in one view.
+lane queue                      Who is waiting for Docker and for the heavy-job slot.
+lane heavy [--label TEXT] -- <command...>
+    Run a heavy host job (lint, tests, a build) alone, when the Mac has memory, with Node's heap capped.
 lane ls                         All lanes: number, label, owner, age, state, URLs.
 lane info <N> [--json]          URLs, ports, worktrees and test accounts for lane N.
 lane login <N> <email> [pw]     Print an API access token for that account (handles admin TOTP).
@@ -272,13 +399,14 @@ lane rebuild <N> [be|ai|fe]...  Rebuild and restart the named services from thei
 lane repair <N>                 Re-attach the base stack's shared services (after the base stack was recreated).
 lane touch <N>                  Mark lane N as in use (resets its stale timer).
 lane down <N>                   Stop lane N, delete its data, volumes and built images, free the number.
+lane down --owner TEXT          The same for every lane whose owner is exactly TEXT (end of a chat).
 lane sweep [--hours H] [--yes]  Remove lanes unused for H hours (default STALE_HOURS). Dry run without --yes.
 lane doctor                     Check config, base stack, shared network, memory and ports.
 EOF
 }
 
 cmd_up() {
-  local label="" be="" ai="" fe="" split=false owner="${LANE_OWNER:-}" force=false
+  local label="" be="" ai="" fe="" split=false owner="${LANE_OWNER:-}" force=false dry=false
   label="${1:-}"; [ -n "$label" ] && [ "${label#--}" = "$label" ] || die "usage: lane up <label> [...]"; shift
   while [ $# -gt 0 ]; do
     case "$1" in
@@ -288,6 +416,7 @@ cmd_up() {
       --split) split=true; shift;;
       --owner) owner="$2"; shift 2;;
       --force) force=true; shift;;
+      --dry-run) dry=true; shift;;
       *) die "unknown option $1";;
     esac
   done
@@ -297,11 +426,28 @@ cmd_up() {
   [ -n "$fe" ] && feb=true || fe="$BASE_DIR/uok-fe"
   for f in "$be/docker-compose.yml" "$ai/docker-compose.yml" "$fe/docker-compose.yml"; do [ -f "$f" ] || die "missing $f"; done
 
-  if [ "$force" != true ]; then
-    local free; free=$(docker_free_mib)
-    [ "$free" -ge "$MIN_FREE_MIB" ] || die "Docker has ${free} MiB free, below MIN_FREE_MIB=${MIN_FREE_MIB}. Run 'lane ls' and 'lane sweep', or pass --force."
-  fi
+  docker info >/dev/null 2>&1 || die "Docker is not running. Start it with: open -a Docker"
   check_shared
+
+  if [ "$dry" = true ]; then
+    # Validate the generated compose file and print the memory caps. Starts nothing, queues nothing.
+    local dn=99 dd; dd="$(lane_dir 99)"
+    [ ! -e "$dd" ] || die "$dd exists; remove it and try again"
+    mkdir -p "$dd/logs"; UP_LANE=$dn; UP_DONE=false
+    jq -n --argjson n "$dn" --arg t "$(now)" '{lane:$n,split:false,last_used:$t}' > "$dd/lane.json"
+    write_compose "$dn" "$be" "$ai" "$fe" "$beb" "$aib" "$feb" false
+    dc "$dn" config -q || die "generated compose is invalid"
+    say "dry run: compose is valid. Memory caps:"
+    dc "$dn" config --format json | jq -r '.services | to_entries[] | select(.value.mem_limit != null) | "  \(.key): \((.value.mem_limit | tonumber / 1048576 | floor)) MiB"' >&2
+    rm -rf "$dd"; UP_LANE=""
+    return 0
+  fi
+
+  # Wait in line. Only the first agent in line starts, only when Docker and the Mac have memory and a
+  # lane number is free. The place is held until this lane is up, so the next agent measures after it.
+  if [ "$force" != true ]; then
+    queue_wait docker "lane up $label${owner:+ ($owner)}" up_blocker
+  fi
 
   # Claim the lowest free number. mkdir is atomic, so two agents can never claim the same lane.
   local n=""
@@ -309,6 +455,7 @@ cmd_up() {
     if mkdir "$(lane_dir "$i")" 2>/dev/null; then n=$i; break; fi
   done
   [ -n "$n" ] || die "all $MAX_LANES lanes are taken (lane ls). Free one with 'lane down N' or 'lane sweep'."
+  UP_LANE=$n; UP_DONE=false
   local d; d="$(lane_dir "$n")"; ports "$n"
   for p in $FE $AI $API $PG $QD $QDG $NEO_HTTP $NEO_BOLT; do
     if lsof -nP -iTCP:"$p" -sTCP:LISTEN >/dev/null 2>&1; then rmdir "$d"; die "port $p for lane $n is already in use by another program"; fi
@@ -321,11 +468,13 @@ cmd_up() {
       urls:{frontend:"http://localhost:\($fe_port)",api:"http://localhost:\($api_port)",ai:"http://localhost:\($ai_port)",
             postgres:"postgresql://postgres:postgres@127.0.0.1:\($pg_port)/uok",qdrant:"http://localhost:\($qd_port)",neo4j:"http://localhost:\($neo_port)"}}' > "$d/lane.json"
   mkdir -p "$d/logs"
+  # The log lives outside the lane folder, so it survives when a failed lane is closed.
+  : > "$LANES_HOME/logs/lane-$n.up.log"; ln -sf "$LANES_HOME/logs/lane-$n.up.log" "$d/logs/up.log"
   write_compose "$n" "$be" "$ai" "$fe" "$beb" "$aib" "$feb" "$split"
   say "claimed lane $n for '$label' (frontend http://localhost:$FE, api http://localhost:$API)"
 
   set_state() { jq --arg s "$1" '.state=$s' "$d/lane.json" > "$d/lane.json.tmp" && mv "$d/lane.json.tmp" "$d/lane.json"; }
-  local log="$d/logs/up.log"
+  local log="$LANES_HOME/logs/lane-$n.up.log"
   dc "$n" config -q >>"$log" 2>&1 || { set_state failed; die "generated compose is invalid, see $log"; }
   {
     local builds=()
@@ -355,7 +504,8 @@ cmd_up() {
   [ "$ok" = true ] || { set_state failed; die "lane $n started but health checks fail; see 'lane logs $n'"; }
   set_state up
   touch_lane "$n"
-  say "lane $n is up"
+  UP_DONE=true; queue_leave
+  say "lane $n is up. Close it with 'lane down $n' as soon as testing ends."
   cmd_info "$n"
 }
 
@@ -386,10 +536,21 @@ cmd_ls() {
   done
   for d in "$LANES_HOME"/lane-*; do [ -d "$d" ] && [ ! -f "$d/lane.json" ] && echo "$(basename "$d")  claiming (no lane.json yet)"; done
   [ "$any" = true ] || echo "no lanes"
-  echo "docker free memory: $(docker_free_mib) MiB (MIN_FREE_MIB=$MIN_FREE_MIB)"
+  echo "docker free memory: $(docker_free_mib) MiB (MIN_FREE_MIB=$MIN_FREE_MIB), Mac ${level_ls:-$(mac_mem_level)}% free"
+  local q; q=$(cmd_queue); [ "$q" = "nobody is waiting" ] || { echo "queue:"; echo "$q" | sed 's/^/  /'; }
 }
 
 cmd_down() {
+  if [ "${1:-}" = --owner ]; then
+    [ -n "${2:-}" ] || die "usage: lane down --owner TEXT"
+    local f any=false
+    for f in "$LANES_HOME"/lane-*/lane.json; do
+      [ -f "$f" ] || continue
+      if [ "$(jq -r .owner "$f")" = "$2" ]; then any=true; cmd_down "$(jq -r .lane "$f")"; fi
+    done
+    [ "$any" = true ] || say "no lane with owner '$2'"
+    return 0
+  fi
   local n="${1:-}"; [ -n "$n" ] || die "usage: lane down <N>"
   local d; d="$(lane_dir "$n")"
   [ -d "$d" ] || die "lane $n does not exist"
@@ -408,6 +569,12 @@ cmd_down() {
   fi
   rm -rf "$d"
   say "lane $n removed (containers, volumes, networks, lane images). Proofs kept in $LANES_HOME/proofs"
+  # When the last lane closes, drop unused image layers and old build cache. Recent cache stays, so the
+  # next build is still fast.
+  if [ -z "$NO_PRUNE" ] && ! ls -d "$LANES_HOME"/lane-[0-9]* >/dev/null 2>&1; then
+    docker image prune -f >/dev/null 2>&1 || true
+    docker builder prune -f --filter until=168h >/dev/null 2>&1 || true
+  fi
 }
 
 cmd_sweep() {
@@ -490,6 +657,58 @@ cmd_rebuild() {
   dc "$n" up -d --wait --wait-timeout 600 "${svcs[@]}"
 }
 
+cmd_run() {
+  local args=() 
+  while [ $# -gt 0 ] && [ "$1" != -- ]; do args+=("$1"); shift; done
+  [ "${1:-}" = -- ] || die "usage: lane run <label> [up options] -- <command...>"; shift
+  [ $# -gt 0 ] || die "lane run needs a command after --"
+  cmd_up "${args[@]}"
+  RUN_LANE=$UP_LANE; export LANE_N=$RUN_LANE
+  local rc=0; "$@" || rc=$?
+  cmd_down "$RUN_LANE"; RUN_LANE=""
+  return $rc
+}
+
+cmd_heavy() {
+  local label="heavy job"
+  while [ $# -gt 0 ] && [ "$1" != -- ]; do
+    case "$1" in --label) label="$2"; shift 2;; *) die "unknown option $1";; esac
+  done
+  [ "${1:-}" = -- ] || die "usage: lane heavy [--label TEXT] -- <command...>"; shift
+  [ $# -gt 0 ] || die "lane heavy needs a command after --"
+  queue_wait heavy "$label: $*" heavy_blocker
+  say "running: $*"
+  local rc=0
+  case " ${NODE_OPTIONS:-} " in
+    *max-old-space-size*) "$@" || rc=$?;;
+    *) NODE_OPTIONS="${NODE_OPTIONS:-} --max-old-space-size=$HEAVY_HEAP_MIB" "$@" || rc=$?;;
+  esac
+  queue_leave
+  return $rc
+}
+
+cmd_queue() {
+  local q t any=false
+  for q in docker heavy; do
+    for t in $(queue_live "$q"); do
+      any=true; echo "$q  $(cat "$QUEUE_DIR/$q/$t" 2>/dev/null)  (pid ${t##*-})"
+    done
+  done
+  [ "$any" = true ] || echo "nobody is waiting"
+}
+
+cmd_mem() {
+  local total free used level swap mac dvm
+  mac=$(mac_total_mib); level=$(mac_mem_level); swap=$(swap_used_mib)
+  total=$(( $(docker info --format '{{.MemTotal}}') / 1048576 )); free=$(docker_free_mib); used=$((total - free))
+  echo "Mac:    $((mac / 1024)) GiB RAM, ${level}% free (lanes need ${MIN_MEM_LEVEL_PCT}%, heavy jobs ${HEAVY_MIN_MEM_LEVEL_PCT}%), swap used ${swap} MiB"
+  echo "Docker: VM $((total / 1024)) GiB, containers use ${used} MiB, ${free} MiB free (a lane needs ${MIN_FREE_MIB} MiB, a build ${BUILD_MIN_FREE_MIB} MiB)"
+  echo "Lanes:  $(ls -d "$LANES_HOME"/lane-[0-9]* 2>/dev/null | wc -l | tr -d ' ') of $MAX_LANES in use. Caps per lane: api $LANE_MEM_API, ai $LANE_MEM_AI, frontend $LANE_MEM_FE, neo4j $LANE_MEM_NEO4J, postgres $LANE_MEM_PG, qdrant $LANE_MEM_QDRANT"
+  echo "Queue:"; cmd_queue | sed 's/^/  /'
+  echo "Largest host processes:"
+  { ps -axo rss,comm | sort -nr | head -5 | awk '{printf "  %.1f GiB %s\n", $1/1048576, $2}'; } || true
+}
+
 cmd_doctor() {
   echo "config: $CONFIG"
   echo "lanes home: $LANES_HOME"
@@ -503,7 +722,14 @@ cmd_doctor() {
   for r in uok-be uok-ai uok-fe; do [ -f "$BASE_DIR/$r/.env" ] && echo "ok   $r .env present" || echo "FAIL $BASE_DIR/$r/.env missing"; done
   command -v node >/dev/null && echo "ok   node $(node -v)" || echo "FAIL node missing (needed for lane shot)"
   [ -d "$SCRIPT_DIR/node_modules/playwright-core" ] && echo "ok   playwright-core installed" || echo "FAIL run: npm --prefix $SCRIPT_DIR install"
-  echo "docker free memory: $(docker_free_mib) MiB (MIN_FREE_MIB=$MIN_FREE_MIB)"
+  cmd_mem
+  local vm mac; vm=$(( $(docker info --format '{{.MemTotal}}') / 1048576 )); mac=$(mac_total_mib)
+  if [ "$vm" -gt "$DOCKER_VM_MAX_MIB" ]; then
+    echo "WARN Docker's VM is $((vm / 1024)) GiB of the Mac's $((mac / 1024)) GiB. Set Docker Desktop, Settings, Resources, Memory limit, to $((DOCKER_VM_MAX_MIB / 1024)) GiB or less, then restart Docker. Tell the user; do not change it yourself."
+  else
+    echo "ok   Docker's VM is $((vm / 1024)) GiB (limit $((DOCKER_VM_MAX_MIB / 1024)) GiB)"
+  fi
+  [ "$(mac_mem_level)" -ge "$MIN_MEM_LEVEL_PCT" ] && echo "ok   Mac memory" || echo "WARN the Mac is short of memory, so lane up will queue"
 }
 
 sub="${1:-help}"; [ $# -gt 0 ] && shift
@@ -524,6 +750,10 @@ case "$sub" in
   down) cmd_down "$@";;
   sweep) cmd_sweep "$@";;
   doctor) cmd_doctor;;
+  mem) cmd_mem;;
+  queue) cmd_queue;;
+  heavy) cmd_heavy "$@";;
+  run) cmd_run "$@";;
   help|-h|--help) usage;;
   *) usage; exit 2;;
 esac

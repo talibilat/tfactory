@@ -1,6 +1,6 @@
 # Plan template and the simple explanation
 
-The plan lives in `.scratch/<KEY>-plan.md`. The same text is shown in chat. Blockers go first, before everything else. The decision log lives beside it in `.scratch/<KEY>-decisions.md`, with the layout in `requirements.md`.
+The plan lives in `.scratch/<KEY>-plan.md` and is shown in chat. Blockers go first. The decision log lives beside it in `.scratch/<KEY>-decisions.md`, with the layout in `requirements.md`.
 
 ## Plan
 
@@ -86,7 +86,7 @@ Fix every gap that is a plan problem. List the rest under Blockers.
 
 ## What I understood (the simple explanation)
 
-The first thing posted after planning. Run the `plain-talk` skill in brief mode to write it. It is for a reader who does not write code, and it is short: about 150 words in all, one or two sentences for each part below. Everyday words, a real example only when it fits in a sentence, no analogy unless asked, and a technical term only when it is the point, with a few words on what it means.
+Posted first after planning. Write it with the `plain-talk` skill in brief mode, for a reader who does not write code. About 150 words in all, one or two sentences per part below. Everyday words, a real example only when it fits in a sentence, no analogy unless asked, a technical term only when it is the point, with a few words on what it means.
 
 1. **What is wrong.** What a person sees, and where. Point to the before screenshot.
 2. **Why it happens.** The cause, in the order things occur.
@@ -99,7 +99,5 @@ Example for a caching bug:
 > **Why.** The app keeps a stored copy of each chat so it loads fast. Saving a chat updates the database but not that copy, so the list reads the old one. A banking app that shows yesterday's balance after a transfer does the same thing.
 > **The fix.** Refresh the stored copy whenever a chat is saved, and add a test that saves a chat and checks the list.
 > **What could go wrong.** Two other screens read the same copy, so the live run checks both.
-
-Give more detail only when the user asks for it.
 
 When the explanation and the plan disagree, fix the plan.

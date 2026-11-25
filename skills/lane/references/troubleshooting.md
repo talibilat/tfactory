@@ -4,8 +4,13 @@ Every entry here happened while building and testing this skill on 6 November 20
 
 | Symptom | Cause | Fix |
 |---|---|---|
-| `lane up` stops with "Docker has N MiB free" | Other stacks or lanes use the memory. A lane needs about 2 GB. | `lane ls`, then `lane down` your own finished lanes or `lane sweep`. Do not stop other people's stacks without asking. |
-| `lane up` waits "for the build lock" or "for N MiB free Docker memory before building" | Another lane is building, or memory is short. Builds run one at a time on purpose. | Wait. It gives up after `BUILD_WAIT_MIN` minutes. |
+| `lane up` prints "queued for docker, place N of M: ..." | Docker or the Mac is short of memory, all lanes are taken or another agent is ahead of you. | Wait. It starts by itself when you are first and memory allows. `lane queue` and `lane mem` show why. Close your own finished lanes with `lane down`. Do not stop other people's stacks or use `--force`. |
+| `lane up` stops with "still queued ... after 90 min" | The wait never cleared. | Stop and tell the user what `lane mem` shows. Do not force it. |
+| `lane up` waits "to build" or "for the build lock" | Another lane is building or memory is short. Builds run one at a time on purpose. | Wait. It gives up after `BUILD_WAIT_MIN` minutes. |
+| `lane heavy` prints "queued for heavy" | Another lint, test or build job is running or the Mac has under 25% memory free. | Wait. Only one heavy job runs at a time. |
+| A container shows exit code 137 in `docker ps -a` | Docker killed it for going over its memory cap. | Report the service and the step. Do not raise the cap to get past it. |
+| `lane doctor` warns "Docker's VM is N GiB" | Docker Desktop's memory limit is above `DOCKER_VM_MAX_MIB`. | Ask the user to lower it in Docker Desktop. It restarts Docker, so the user decides. |
+| `lane up` says "did not finish starting. Closing it" | The start failed and `lane` closed the lane so it does not hold memory. | Read `<LANES_HOME>/logs/lane-N.up.log`, fix the cause and run `lane up` again. |
 | The frontend shows "Something went wrong", and the frontend log has `getaddrinfo EAI_AGAIN api` | Docker's internal name lookups timed out while another lane built images with little free memory. Seen twice before the build lock existed. | Reload the page and repeat the step. If it repeats, check `lane ls` for a lane in state `building`. |
 | A UI step waits forever although the job finished in the backend | The page stopped polling after one failed request. | Reload. The `foundation` flow reloads every minute while it waits for extraction. |
 | `lane up` fails at "base stack has no running 'doc-parser-lb'" | The base stack is stopped. | Start the base stack (see `setup.md`), then `lane up` again. |
@@ -13,8 +18,8 @@ Every entry here happened while building and testing this skill on 6 November 20
 | Login in the browser lands back on `/login` | The saved browser session expired or belongs to another lane's database. | `browser.mjs` signs in again on its own. Delete `<lane>/.auth/` to force a fresh login. |
 | The asset shows "failed (retryable)" and Full AI Gen stays disabled; the AI service logs `API key not valid` from `google.genai` | The `GOOGLE_API_KEY` in the base stack's `uok-ai/.env` is rejected by Google. Seen on 6 November 2026 in the base stack too (90 errors since 10:24), so not a lane problem. | Put a valid key in `<BASE_DIR>/uok-ai/.env`, then `lane exec N up -d --force-recreate ai-backend` and press Retry indexing on the asset. |
 | The `foundation` flow stops at Validate with a `FINDING` such as "assessment weights total 118%" | Real product result: the AI extraction picks up roll-up rows and figure copies of assessments. Seen on both small handbooks. | Read the candidates (`lane exec N exec -T postgres psql ...` or the log), decide which are duplicates, then start a fresh run with `--reject '<pattern>'` and, if conflicts are open, `--resolve-conflicts '<comment>'`. Accepted items cannot be rejected afterwards, so decide before accepting. |
-| A UI step waits on a button that never enables | The app needs a decision the flow does not make (individual review, approval tick-boxes, a disabled reason in the button's tooltip). | The failure line prints the page's buttons; read the disabled reason and add the decision as an option. |
-| The AI service logs `Failed to resolve 'aruva-otel-gateway'` | The AI service still exports telemetry although `OTEL_ENABLED=false` is set. | Harmless noise. The base stack shows the same. |
+| A UI step waits on a button that never enables | The app needs a decision the flow does not make (individual review, approval tick-boxes, a disabled reason in the button's tooltip). | The failure line prints the page's buttons. Read the disabled reason and add the decision as an option. |
+| The AI service logs `Failed to resolve 'aruva-otel-gateway'` | The AI service still exports telemetry although `OTEL_ENABLED=false` is set. | Harmless. The base stack shows the same. |
 
 ## Timings measured on the author's Mac (18 CPUs, 16 GB Docker memory)
 

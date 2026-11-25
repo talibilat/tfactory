@@ -10,11 +10,11 @@ Docker Desktop with Compose v2.20 or newer (the `include` key with `env_file`), 
 npm --prefix ~/.agents/skills/lane/scripts install
 ```
 
-That installs `playwright-core` only. It drives the Chrome you already have, so no browser download.
+This installs `playwright-core` only. It drives your existing Chrome, so no browser download.
 
 ## 2. The base stack
 
-Lanes borrow stateless services from one always-on stack, built from `origin/dev`. On the author's machine it is the compose project `qa-dev` in `ARUVA/qa-stack` (its README explains how it was built). Any base works if it has:
+Lanes borrow stateless services from one always-on stack built from `origin/dev`. On the author's machine it is the compose project `qa-dev` in `ARUVA/qa-stack` (its README explains how it was built). Any base works if it has:
 
 - a running compose project with the services `doc-parser-lb`, `content-extractor-lb`, `presidio-analyzer`, `presidio-anonymizer` and `presidio-image-redactor`;
 - a folder with dev checkouts `uok-be`, `uok-ai`, `uok-fe`, each with a working `.env` (lanes read these `.env` files and never copy them into worktrees). `uok-be/.env` must hold the same `DOC_PARSER_INTERNAL_TOKEN` and `CONTENT_EXTRACTOR_INTERNAL_TOKEN` the base's parser and extractor use;
@@ -34,14 +34,22 @@ BE_BASE_IMAGE=qa-dev-uok-be:local
 AI_BASE_IMAGE=qa-dev-ai-backend:latest
 FE_BASE_IMAGE=qa-dev-frontend:latest
 PORT_BASE=20000                           # lane N uses PORT_BASE + N*100 + offset
-MAX_LANES=6
-MIN_FREE_MIB=1800                         # lane up refuses below this much free Docker memory
-STALE_HOURS=6                             # lane sweep removes lanes idle longer than this
+MAX_LANES=3                               # more lanes than this wait in the queue
+MIN_FREE_MIB=4096                         # lane up queues below this much free Docker memory
+STALE_HOURS=2                             # lane sweep removes lanes idle longer than this
+# Optional. Defaults shown.
+# BUILD_MIN_FREE_MIB=6000                 # a build waits for this much free Docker memory
+# MIN_MEM_LEVEL_PCT=20                    # lane up queues when the Mac has less memory free than this
+# HEAVY_MIN_MEM_LEVEL_PCT=25              # lane heavy waits below this
+# HEAVY_HEAP_MIB=3072                     # Node heap cap for lane heavy
+# QUEUE_WAIT_MIN=90                       # give up waiting in a queue after this long
+# DOCKER_VM_MAX_MIB=20480                 # lane doctor warns when Docker's VM is bigger than this
+# LANE_MEM_API=2g LANE_MEM_AI=1536m LANE_MEM_FE=1g LANE_MEM_NEO4J=1g   # per-container caps
 ```
 
 ## 4. Install the skill
 
-The skill lives in the skills repo and is linked into each agent's folder:
+The skill lives in the skills repo, linked into each agent's folder:
 
 ```
 ln -s <skills repo>/skills/lane ~/.agents/skills/lane
@@ -66,4 +74,6 @@ Lane N uses these host ports, all bound to 127.0.0.1:
 
 where base is `PORT_BASE + N*100`.
 
-A lane uses about 2 GB of Docker memory (backend in single-process mode about 350 MB, AI service 500 to 800 MB, Neo4j 600 MB, the rest small). The number of lanes you can run at once is roughly (Docker memory minus everything else running) divided by 2 GB. Raising Docker Desktop's memory limit raises it; that needs a Docker restart, which stops every running stack, so plan it.
+A lane uses about 2 GB of Docker memory while idle (backend in single-process mode about 400 MB, AI service 500 to 800 MB, Neo4j 600 MB, the rest small), measured on lane 1. Each container has a hard cap, so one runaway service cannot take all of Docker's memory.
+
+Docker Desktop's memory limit should stay at or below `DOCKER_VM_MAX_MIB` (20 GB on this 48 GB Mac). It was 32 GB, which left 16 GB for macOS, T3 Code, Chrome and Teams, and the Mac ran out of memory. Change it by hand in Docker Desktop, Settings, Resources. This restarts Docker and stops every running stack, so tell the user first. `lane doctor` warns when the limit is too high. `MAX_LANES` sets the number of lanes at once, and further `lane up` calls wait in the queue.

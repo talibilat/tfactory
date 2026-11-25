@@ -7,7 +7,7 @@ Never assume a requirement. Check Jira for the latest requirements before acting
 
 # Ticket pre-work review
 
-Check a ticket before anyone builds it. A vague ticket turns into bugs later. Fixing the words now is cheap.
+Check a ticket before anyone builds it. A vague ticket turns into bugs later, and fixing the words now is cheap.
 
 ```mermaid
 flowchart LR
@@ -23,13 +23,13 @@ Never edit the ticket before the user says yes.
 
 ## To-do list
 
-Before the first step, make a temporary to-do list from this skill's steps, so nothing is forgotten:
+Before the first step, make a temporary to-do list from this skill's steps:
 
 ```
 python3 -I ~/.agents/skills/guide/scripts/todo.py new ticket-prework-review --key <KEY> --from ~/.agents/skills/ticket-prework-review/SKILL.md
 ```
 
-Leave out `--key` when the task has no key. Tick each item when its Done condition is met, with the evidence: `todo.py tick ticket-prework-review --key <KEY> N --note "<proof>"`. Mark a stuck item with `todo.py block`, and add a step you find later with `todo.py add`. Show the list with every update. When the last item is ticked, the list deletes itself. See "To-do lists" in the conventions file.
+Leave out `--key` when the task has no key. Tick each item when its Done condition is met, with evidence: `todo.py tick ticket-prework-review --key <KEY> N --note "<proof>"`. Mark a stuck item with `todo.py block`, and add a step you find later with `todo.py add`. Show the list with every update. The list deletes itself when the last item is ticked. See "To-do lists" in the conventions file.
 
 ## Step 1. Find the ticket
 
@@ -42,9 +42,9 @@ Leave out `--key` when the task has no key. Tick each item when its Done conditi
 
 If several files match, list them and ask. If none match, say where you looked and ask.
 
-Also read what the ticket points to: sibling tickets, the parent ticket, and the code and tests it names. Read the functions it cites and their direct callers, not whole modules. You need them to check the ticket's claims are still true, and a smaller read keeps the detail you're checking in view.
+Also read what the ticket points to: sibling tickets, the parent ticket, and the code and tests it names. Read the functions it cites and their direct callers, not whole modules. You need them to check the ticket's claims are still true.
 
-Then read the project's past fixes in the files the ticket names. A bug class the project has had before is the first gap to check for.
+Then read the project's past fixes in the files the ticket names. A bug class the project had before is the first gap to check for.
 
 ```bash
 git log --oneline -i -E --grep='fix|bug|secur|vuln|auth|bypass|leak|inject|permission' -- <files the ticket names>
@@ -60,7 +60,7 @@ Rename this chat to `tXX-r-vXX`.
 | `r` | This is a review before the work. | `r` |
 | `vXX` | Which review of this ticket this is, two digits. | `v01` for the first, `v02` for the second |
 
-To find the version, look at existing chat names starting with `tXX-r-` and use the next number. If you can't see other chats, use `v01` and tell the user so they can correct it. Use the app's rename tool (for example a set-session-title tool, or a rename-chat skill). If there isn't one, give the user the name to set by hand.
+To find the version, look at existing chat names starting with `tXX-r-` and use the next number. If you can't see other chats, use `v01` and tell the user so they can correct it. Use the app's rename tool (a set-session-title tool or a rename-chat skill). If there is none, give the user the name to set by hand.
 
 Example: the third review of ticket 3 is named `t03-r-v03`.
 
@@ -96,13 +96,13 @@ Open a few of the lines and quotes the ticket cites. Report any that no longer m
 
 ### Hunt for gaps
 
-Filling in the seven checks finds the obvious gaps. These moves find the rest. Each one changes where you look. None of them lowers the bar for reporting: every gap you report still needs a concrete example of the wrong build it causes.
+The seven checks find the obvious gaps. These moves find the rest. None lowers the bar for reporting: every gap you report still needs a concrete example of the wrong build it causes.
 
 | Move | Frame it as | Why it finds more |
 |---|---|---|
 | Assume holes | "This ticket has at least three gaps that will make someone build the wrong thing. Find them." | Stops you reading unclear wording as "they probably mean the obvious thing". A ticket with no real gaps still scores Ready. |
-| Build it word for word | "If I built exactly what this says and nothing more, how would it go wrong?" | "Is this ticket clear?" has an easy answer, yes. This one makes you produce the wrong build. |
-| List, then check | First list every assumption the ticket makes about the code, the data, the users and the order of events. Then check each assumption alone against the code. | Listing and checking in separate passes catches what a single read skips. Example: the ticket assumes every quiz has a teacher, and the code allows quizzes with none. |
+| Build it word for word | "If I built exactly what this says and nothing more, how would it go wrong?" | "Is this ticket clear?" has an easy answer, yes. This forces the wrong build. |
+| List, then check | First list every assumption the ticket makes about the code, the data, the users and the order of events. Then check each assumption alone against the code. | Separate passes catch what one read skips. Example: the ticket assumes every quiz has a teacher, and the code allows quizzes with none. |
 | Past bugs first | For each bug class in the past fixes from step 1, ask whether this ticket could bring it back. | The project already paid for these once. |
 | Ask what else | After the first pass, run up to two more: "Set aside the gaps already found. What subtler ones are left?" Stop when a pass adds nothing. | The first gaps are the obvious ones. |
 
@@ -125,7 +125,7 @@ If the ticket crosses no trust boundary, say so in one line of the report and sc
 
 The score is always out of 100. Write it as `NN/100` in the first line of the report. Do not score out of 10, out of 5, or as a percent on its own.
 
-Start from the seven checks. Present gets the full points. Partial gets half, and a half rounds up. Missing gets 0.
+Start from the seven checks. Present gets full points, Partial gets half (rounded up), Missing gets 0.
 
 | Check | Present | Partial | Missing |
 |---|---|---|---|
@@ -137,7 +137,7 @@ Start from the seven checks. Present gets the full points. Partial gets half, an
 | What may and may not be touched | 10 | 5 | 0 |
 | Unusual cases, misuse and tests | 15 | 8 | 0 |
 
-Those seven add up to 100 when every check is Present. Then take points off for scope problems. The total cannot go below 0.
+The seven add up to 100 when every check is Present. Then take points off for scope problems. The total cannot go below 0.
 
 | Scope problem | Take off |
 |---|---|
@@ -164,11 +164,11 @@ Show the sum in the report, for example `15 + 10 + 15 + 8 + 10 + 10 + 0 = 68`, t
 
 ### Splitting the work
 
-Split the work so several agents can build it at once. Each piece owns its own files, has its own "done when", and says what it waits for. If two pieces need the same file, merge them or name one owner. Keep each trust boundary inside one piece, so one agent owns its rules from the threat model. A small ticket can have one piece. Say so rather than inventing a split.
+Split the work so several agents can build it at once. Each piece owns its own files, has its own "done when", and says what it waits for. If two pieces need the same file, merge them or name one owner. Keep each trust boundary inside one piece, so one agent owns its threat-model rules. A small ticket can have one piece. Say so instead of inventing a split.
 
 ## Step 4. Write the report
 
-Read `references/report.md` now. It holds the writing rules, the pictures, the report layout and example tables. Follow it exactly.
+Read `references/report.md` now. It holds the writing rules, pictures, report layout and example tables. Follow it exactly.
 
 Number the change rows in order of importance. The user approves by row number.
 

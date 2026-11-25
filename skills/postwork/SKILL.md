@@ -7,7 +7,7 @@ Never assume a requirement. Check Jira for the latest requirements before acting
 
 # Ticket post-work review
 
-Check the finished work against its ticket. Its partner, `ticket-prework-review`, checks the ticket before the work starts. This one checks the code does what the ticket asked, safely, and touches nothing it shouldn't.
+Check the finished work against its ticket. Its partner, `ticket-prework-review`, checks the ticket before work starts. This one checks the code does what the ticket asked, safely, and touches nothing it shouldn't.
 
 ```mermaid
 flowchart LR
@@ -19,37 +19,37 @@ flowchart LR
   report --> plan[Share a precise fix plan]
 ```
 
-This skill only reports. It never edits project code or the ticket, and it writes no report files. Throwaway proof tests and scripts go in the scratchpad, a temp folder or a throwaway worktree, and you delete them when done.
+This skill only reports. It never edits project code or the ticket, and it writes no report files. Put throwaway proof tests and scripts in the scratchpad, a temp folder or a throwaway worktree, and delete them when done.
 
 ## To-do list
 
-Before the first step, make a temporary to-do list from this skill's steps, so nothing is forgotten:
+Before the first step, make a temporary to-do list from this skill's steps:
 
 ```
 python3 -I ~/.agents/skills/guide/scripts/todo.py new postwork --key <KEY> --from ~/.agents/skills/postwork/SKILL.md
 ```
 
-Leave out `--key` when the task has no key. Tick each item when its Done condition is met, with the evidence: `todo.py tick postwork --key <KEY> N --note "<proof>"`. Mark a stuck item with `todo.py block`, and add a step you find later with `todo.py add`. Show the list with every update. When the last item is ticked, the list deletes itself. See "To-do lists" in the conventions file.
+Leave out `--key` when the task has no key. Tick each item when its Done condition is met, with evidence: `todo.py tick postwork --key <KEY> N --note "<proof>"`. Mark a stuck item with `todo.py block`, and add a step you find later with `todo.py add`. Show the list with every update. The list deletes itself when the last item is ticked. See "To-do lists" in the conventions file.
 
 ## Mandatory standards and spec review
 
-Read `references/matt-code-review.md` in full for every review. It contains Matt Pocock's complete code review skill, including its standards sources and code smell baseline. Apply both the Standards and Spec axes alongside the existing safety, bug and scope checks. Respect documented repo standards and treat smells as judgement calls. Cite the exact standard or requirement and evidence for each finding. Report Standards and Spec separately, with a count and worst finding for each. Do not merge or rerank the axes.
+Read `references/matt-code-review.md` in full for every review. It holds Matt Pocock's complete code review skill, with its standards sources and code smell baseline. Apply both the Standards and Spec axes alongside the safety, bug and scope checks. Respect documented repo standards and treat smells as judgement calls. Cite the exact standard or requirement and the evidence for each finding. Report Standards and Spec separately, with a count and worst finding for each. Do not merge or rerank the axes.
 
-Identify and validate the comparison point and spec using Matt's process. If the user gives neither, first use the ticket and branch comparison below; ask only if those do not establish them. Include committed, staged, unstaged and relevant untracked changes in the requested review. State exactly what was reviewed. If no spec exists or a comparison cannot be established, disclose the limitation and do not claim a full pass.
+Identify and validate the comparison point and spec using Matt's process. If the user gives neither, use the ticket and branch comparison below first, and ask only if those do not establish them. Include committed, staged, unstaged and relevant untracked changes. State exactly what was reviewed. If no spec exists or no comparison can be established, disclose the limitation and do not claim a full pass.
 
-Run the Standards and Spec reviews in parallel fresh-context subagents when available and authorized, following Matt's prompts and including the complete smell baseline. If delegation is unavailable or prohibited, perform both independent passes yourself and disclose the limitation. Do not require unrelated tracker setup when the ticket or spec is already available.
+Run the Standards and Spec reviews in parallel fresh-context subagents when available and authorized, following Matt's prompts and including the complete smell baseline. If delegation is unavailable or prohibited, do both independent passes yourself and disclose the limitation. Do not require unrelated tracker setup when the ticket or spec is already available.
 
 Apply a strict gate: any proven material standards violation, missing or partial requirement, scope violation, safety flaw, regression, or missing or weakened required test fails the review, regardless of score. Unverified requirements, unavailable required tests, missing specs or incomplete coverage prevent PASS; report PASS WITH MANUAL CHECKS only when the remaining checks can be completed manually and identify them. Never invent findings, treat a smell alone as a hard violation, or claim safety without evidence. Existing project or user instructions take precedence.
 
 ## How this review finds problems
 
-A broad "find every problem in this diff" pass returns a long list of generic risks, many in code no attacker can reach. This review narrows the search instead:
+A broad "find every problem in this diff" pass returns generic risks, many in code no attacker can reach. This review narrows the search:
 
 1. A **threat model** of under 20 lines says who can attack the change, where they get in, and which rules must stay true.
 2. The change splits into **thin slices**, one per trust boundary or risky operation, and each slice gets its own focused search.
 3. A **verifier** proves each suspect by running it or tracing it end to end. Only proven problems count.
 
-Spend little effort on setup (steps 1 to 4), most of it on the hunt, and about a quarter on proof. Keep the working context small. Read the slice you're hunting and its callers, not every file at once.
+Spend little effort on setup (steps 1 to 4), most on the hunt, and about a quarter on proof. Keep the working context small: read the slice you're hunting and its callers, not every file at once.
 
 ## Strict, not picky
 
@@ -68,7 +68,7 @@ The result decides whether work can merge, so people must trust it both ways. Mi
 | Another approach that would also work | "A loop would read better than this filter." |
 | Problems that were there before this change | An old bug in a file the change only touched lightly |
 
-Put anything worth saying from the second table under "Optional improvements" (at most 3) or "There before this change". The hunt assumes bugs exist so you search hard. The report states only what you proved, so a clean change gets a clean report and an empty findings table is a correct result.
+Put anything worth saying from the second table under "Optional improvements" (at most 3) or "There before this change". The hunt assumes bugs exist, so search hard. The report states only what you proved, so a clean change gets a clean report, and an empty findings table is a correct result.
 
 ## Step 1. Find the ticket
 
@@ -91,7 +91,7 @@ Rename this chat to `tXX-pw-vXX`.
 | `pw` | This is a post-work review. | `pw` |
 | `vXX` | Which post-work review of this ticket this is, two digits. | `v01` for the first, `v02` after a round of fixes |
 
-To find the version, look at existing chat names starting with `tXX-pw-` and use the next number. If you can't see other chats, use `v01` and tell the user so they can correct it. Use the app's rename tool (for example a set-session-title tool, or a rename-chat skill). If there isn't one, give the user the name to set by hand.
+To find the version, look at existing chat names starting with `tXX-pw-` and use the next number. If you can't see other chats, use `v01` and tell the user so they can correct it. Use the app's rename tool (a set-session-title tool or a rename-chat skill). If there is none, give the user the name to set by hand.
 
 ## Step 3. See what changed
 
@@ -101,19 +101,19 @@ To find the version, look at existing chat names starting with `tXX-pw-` and use
 | A git branch | Find the main branch (`git symbolic-ref refs/remotes/origin/HEAD`, else `main`, else `master`). Compare with `git diff <main>...HEAD`, add `git diff HEAD` for unsaved work and new files from `git status --porcelain`. | Branch `fix/skill-rules` against `dev` |
 | No git, or no changes found | Say so and ask which files to review. | |
 
-Skip generated files, such as build output, `__pycache__`, editor files and lock-file churn the ticket didn't ask for. They don't count against scope.
+Skip generated files (build output, `__pycache__`, editor files, lock-file churn the ticket didn't ask for). They don't count against scope.
 
-Then read the project's past fixes in the changed files. Bug classes the project has already had are the likeliest to come back.
+Then read the project's past fixes in the changed files. Bug classes the project already had are the likeliest to return.
 
 ```bash
 git log --oneline -i -E --grep='fix|bug|secur|vuln|auth|bypass|leak|inject|permission' -- <changed files>
 ```
 
-Open the 3 to 5 most relevant fix commits and note the bug class each one fixed. Also note findings from earlier `tXX-pw-` reviews of this ticket if the user shares them.
+Open the 3 to 5 most relevant fix commits and note the bug class each fixed. Also note findings from earlier `tXX-pw-` reviews of this ticket if the user shares them.
 
 ## Step 4. Write the threat model
 
-Keep it under 20 lines. It's a working note you extend during the hunt, not a document.
+Keep it under 20 lines. It's a working note you extend during the hunt.
 
 | Part | What to write | Example |
 |---|---|---|
@@ -126,20 +126,18 @@ Keep it under 20 lines. It's a working note you extend during the hunt, not a do
 | Rules that must stay true | 3 to 8 lines of the form "only X can do Y" or "every Z passes check W". Take them from the ticket's must-work and don't-touch lists, the past fixes and the code's own guards. | "Only the teacher who owns a quiz can read its results." |
 | Slices | 1 to 4 thin slices. Each is one trust boundary or risky operation, from its entry points to where the data ends up. | "Slice 1: the results route, from the URL id to the database read." |
 
-If the ticket already has a threat model or rules section (`ticket-prework-review` adds one), start from it and extend it. If the change crosses no trust boundary, say so in one line. The hunt then covers bugs only, as one slice.
-
-When a slice turns up a new entry point, attacker path or rule, add it to the model.
+If the ticket already has a threat model or rules section (`ticket-prework-review` adds one), start from it and extend it. If the change crosses no trust boundary, say so in one line. The hunt then covers bugs only, as one slice. When a slice turns up a new entry point, attacker path or rule, add it to the model.
 
 ## Step 5. Check it was built and stayed in bounds
 
-These two areas are bookkeeping. Every row points to evidence: a file and line, a test result, or a quoted ticket line.
+Every row points to evidence: a file and line, a test result, or a quoted ticket line.
 
 | Area | What to check | Ratings | Example |
 |---|---|---|---|
 | A. Did it do what the ticket asked? | One row per planned change and per "must work" item. Check required tests were added and protected tests weren't edited. | Done, Partial, Missing, Can't verify | "Rule 4, never leave a question with no skills: Done, test at line 210." |
 | D. Did it stay in bounds? | Every changed file is Expected or Unexpected. Each don't-touch item: changed or not. Anything marked "left out" done anyway. Formatting-only edits count as unexpected. | Expected, Unexpected | "Unexpected: the prompt file was reformatted." |
 
-Read changed files in full where needed. A change can look right alone and be wrong in context. Run the tests the ticket names if you can. If you can't, say "not run".
+Read changed files in full where needed, since a change can look right alone and be wrong in context. Run the tests the ticket names if you can. If you can't, say "not run".
 
 "Can't verify" means it needs something you can't do here, such as a live model run. Say what's needed. No evidence either way is Can't verify, not Done.
 
@@ -147,24 +145,24 @@ Read changed files in full where needed. A change can look right alone and be wr
 
 This covers area B (is it safe?) and area C (did it add bugs?). Hunt one slice at a time, holding only the threat model, the slice's files and their direct callers.
 
-Use these moves on every slice. Each one changes where you look. None of them lowers the proof bar in step 7.
+Use these moves on every slice. None lowers the proof bar in step 7.
 
 | Move | Frame it as | Why it finds more |
 |---|---|---|
-| Play the attacker | "I've been hired to break this change, and I get paid only for attacks that work." | An auditor lists everything. An attacker looks for what pays off and follows it to the end. |
-| Assume mistakes | "The developer made at least two mistakes in this slice. Find them." | Stops you explaining odd code away as intentional. Example: `let decoded = true` reads as a choice until you assume it's a bug. |
-| Ask how to break it | "How would I break this?" in place of "Is this safe?" | "Is this safe?" has an easy answer, yes. "How would I break this?" makes you produce attacks. |
-| List, then break | First list every assumption the slice's code makes about its inputs, its caller, the environment and the order of events. Then take each assumption alone and ask whether an attacker from the threat model can make it false. | Listing and judging in separate passes catches what a single pass skips. |
-| Compare with the standard | For login, sessions, tokens, crypto, HTML cleaning, SQL and file paths, ask how this code differs from the standard safe way. | These have one right way and many wrong ones. Example: a JWT check that trusts the algorithm named in the token's own header. |
-| Write the attack | For each suspect, write the exact request, input or sequence of events that breaks it. | If you can't write the attack, the suspect is probably false, and that's useful to know. |
-| Ask what else | After the first pass, run up to two more: "Set aside [classes already found]. What subtler problems are left?" Stop when a pass adds nothing. | The first findings are the obvious ones. The subtle ones only come when you push past them. |
-| Stay in the attacker's limits | Drop any attack that needs powers the threat model rules out, such as database access. | Removes problems nobody could actually cause. |
+| Play the attacker | "I've been hired to break this change, and I get paid only for attacks that work." | An auditor lists everything. An attacker follows what pays off to the end. |
+| Assume mistakes | "The developer made at least two mistakes in this slice. Find them." | Stops you explaining odd code away. Example: `let decoded = true` reads as a choice until you assume it's a bug. |
+| Ask how to break it | "How would I break this?" in place of "Is this safe?" | "Is this safe?" has an easy answer, yes. "How would I break this?" forces attacks. |
+| List, then break | First list every assumption the slice's code makes about its inputs, its caller, the environment and the order of events. Then take each assumption alone and ask whether an attacker from the threat model can make it false. | Separate passes catch what one pass skips. |
+| Compare with the standard | For login, sessions, tokens, crypto, HTML cleaning, SQL and file paths, ask how this code differs from the standard safe way. | One right way, many wrong ones. Example: a JWT check that trusts the algorithm named in the token's own header. |
+| Write the attack | For each suspect, write the exact request, input or sequence of events that breaks it. | If you can't write the attack, the suspect is probably false. |
+| Ask what else | After the first pass, run up to two more: "Set aside [classes already found]. What subtler problems are left?" Stop when a pass adds nothing. | The first findings are the obvious ones. Subtle ones need a push. |
+| Stay in the attacker's limits | Drop any attack that needs powers the threat model rules out, such as database access. | Removes problems nobody could cause. |
 
 For area B, check each rule from the threat model against each attacker who can reach the slice. Also check the usual weak spots this change adds: outside text reaching queries, commands, file paths or web pages; weaker login or permission checks; secrets or personal data in code or logs; unsafe file reading; no size limits; risky new packages; prompt text a document could override.
 
 For area C, the attacker is a normal user on a bad day. Check each unusual case in the ticket, then empty, single, largest and broken inputs, wrong conditions, off by one, errors swallowed silently, two saves overwriting each other, and old callers broken.
 
-**Large changes.** When the change has two or more slices, or more than about 300 changed lines, and you can start subagents, give each slice its own subagent so each search runs in a small, fresh context. Its prompt holds only the threat model, the slice (files, entry points, where the data ends up, rules to check), the moves table above, and this request: "Return each suspect with the attack that triggers it, the file and line, and the call chain from attacker input to the harm." Keep each prompt under a page. Run steps 5 and 7 yourself.
+**Large changes.** When the change has two or more slices, or more than about 300 changed lines, and you can start subagents, give each slice its own subagent, so each search runs in a small, fresh context. Its prompt holds only the threat model, the slice (files, entry points, where the data ends up, rules to check), the moves table above, and this request: "Return each suspect with the attack that triggers it, the file and line, and the call chain from attacker input to the harm." Keep each prompt under a page. Run steps 5 and 7 yourself.
 
 ## Step 7. Prove each finding
 
@@ -179,14 +177,14 @@ A suspect is not a finding. Every scored finding needs an exact place (file and 
 
 Prefer running over tracing. Write proof tests outside the repo or in a throwaway worktree, quote their output under Evidence, and delete them after.
 
-Check each Critical or High finding a second time. If you can start subagents, give one the finding and the code and ask it to prove the finding wrong. Keep the finding only if that attempt fails.
+Check each Critical or High finding a second time. If you can start subagents, give one the finding and the code and ask it to prove the finding wrong. Keep the finding only if that fails.
 
 | Counts as a finding | Doesn't count |
 |---|---|
 | "If the retry fails, the question is saved through the backup route, which skips the new check. Example: a random-sampling question keeps its 'sensation' skill and the teacher isn't told." | "This might not scale." |
 | "The new page loads every user's report. Example: user A sees user B's marks." | "Consider adding validation." |
 
-Rate by realistic harm in this product, not the worst case imaginable. Apply the rules the same way every time, so two reviews of the same code give the same result.
+Rate by realistic harm in this product, not the worst case imaginable. Apply the rules the same way every time, so two reviews of the same code agree.
 
 ## Step 8. Score out of 100
 
@@ -213,7 +211,7 @@ Only proven findings take points off. Round to the nearest whole number, halves 
 
 ### Pass or fail
 
-The gate is separate from the score, so one serious problem can't be averaged away.
+The gate is separate from the score, so one serious problem is never averaged away.
 
 | Gate | When | Example |
 |---|---|---|
@@ -225,8 +223,8 @@ Any proven material Medium or Low finding also fails the gate. The score never o
 
 ## Step 9. Write the report
 
-Read and apply `~/.agents/skills/unslop/SKILL.md` before writing the report. Read `references/report.md` now. Follow its writing rules and layout, adding separate Standards and Spec sections as required above. Where its gate examples conflict with the strict gate, use the strict gate. The report is always in chat, never in a file.
+Read and apply `~/.agents/skills/unslop/SKILL.md` before writing the report. Read `references/report.md` now and follow its writing rules and layout, adding separate Standards and Spec sections as required above. Where its gate examples conflict with the strict gate, use the strict gate. The report is always in chat, never in a file.
 
 ## Step 10. Share a precise fix plan
 
-End the report with a numbered plan for each proven finding, ordered by severity and dependencies. For each step, name the finding, exact files and functions when known, the change needed, and the test or other check that will prove the fix works. State any dependencies, uncertainty or manual checks without guessing. Keep the plan within the ticket's scope and distinguish confirmed fixes from choices that need investigation. If there are no findings, say no fixes are needed and list any remaining checks. Use Unslop and plain language throughout. Do not ask to update the ticket or make changes unless the user explicitly requests them.
+End the report with a numbered plan for each proven finding, ordered by severity and dependencies. For each step, name the finding, the exact files and functions when known, the change needed, and the test or check that proves the fix. State dependencies, uncertainty and manual checks without guessing. Keep the plan within the ticket's scope and separate confirmed fixes from choices that need investigation. If there are no findings, say no fixes are needed and list any remaining checks. Use Unslop and plain language. Do not ask to update the ticket or make changes unless the user explicitly requests them.

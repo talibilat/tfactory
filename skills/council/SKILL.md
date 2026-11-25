@@ -7,17 +7,17 @@ Never assume a requirement. Check Jira for the latest requirements before acting
 
 # council
 
-Three models that were trained by different companies make different mistakes. Where all three agree, the answer is probably right. Where they disagree, look closer.
+Three models from different companies make different mistakes. Where all three agree, the answer is probably right. Where they disagree, look closer.
 
 ## To-do list
 
-Before the first step, make a temporary to-do list from this skill's steps, so nothing is forgotten:
+Before the first step, make a temporary to-do list from this skill's steps:
 
 ```
 python3 -I ~/.agents/skills/guide/scripts/todo.py new council --key <KEY> --from ~/.agents/skills/council/SKILL.md
 ```
 
-Leave out `--key` when the task has no key. Tick each item when its Done condition is met, with the evidence: `todo.py tick council --key <KEY> N --note "<proof>"`. Mark a stuck item with `todo.py block`, and add a step you find later with `todo.py add`. Show the list with every update. When the last item is ticked, the list deletes itself. See "To-do lists" in the conventions file.
+Leave out `--key` when the task has no key. Tick each item when its Done condition is met, with evidence: `todo.py tick council --key <KEY> N --note "<proof>"`. Mark a stuck item with `todo.py block`, and add a step you find later with `todo.py add`. Show the list with every update. The list deletes itself when the last item is ticked. See "To-do lists" in the conventions file.
 
 ## The members
 
@@ -39,7 +39,7 @@ GPT Terra (`gpt-6.1-terra`) takes the GPT seat when Sol is unavailable. Call `or
 4. **Act.** Make the changes you agree with. For each one you decline, write the reason. A product question the council raises goes to the BA's words in Jira, never to a vote.
 5. **Ask again** after changes, with a fresh round. Stop when every member scores 9 or more, or when a round brings no new verified finding. At most 3 rounds.
 
-Keep the scope where the user's goal put it. A council round tends to grow the work one small suggestion at a time. Decline what the task does not need and list it as a follow-up.
+Keep the scope where the user's goal put it. Council rounds tend to grow the work one suggestion at a time: decline what the task does not need and list it as a follow-up.
 
 ## Report
 

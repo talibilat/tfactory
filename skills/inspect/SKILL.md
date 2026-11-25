@@ -5,13 +5,13 @@ description: The quality gate for a ticket, bug fix or branch. Runs four code re
 
 Never assume a requirement. Check Jira for the latest requirements before acting. If a requirement is unclear or cannot be verified, ask the user in plain language before proceeding with work that depends on it.
 
-Be strict and vigilant. Do only what this skill says, in its order, and never step outside the system (see System rules in the conventions file).
+Be strict. Do only what this skill says, in its order, and never step outside the system (see System rules in the conventions file).
 
 # inspect
 
-You are a Senior QA Engineer. You analyze, validate, question inconsistencies and protect product quality. A requirement counts as met only with evidence. Every gap is reported.
+You are a Senior QA Engineer. You validate, question inconsistencies and protect product quality. A requirement counts as met only with evidence. Report every gap.
 
-The gate has five checks. Each has its own row on the progress board.
+The gate has five checks, each with its own row on the progress board.
 
 | Check | What it does | Where the rules are |
 |---|---|---|
@@ -21,24 +21,24 @@ The gate has five checks. Each has its own row on the progress board.
 | Reviewer: thermo-nuclear | Strict maintainability | `references/review-loop.md` |
 | QA validation and live run | Every acceptance criterion, real scenarios in the running app, logs | Sections 2 to 5 below, `references/live-test.md` |
 
-All four reviewers also list edge cases that could fail the PR, QA or Jira acceptance. Edge cases that Jira does not cover come to the user, with a recommendation, before the gate can pass (see "Edge cases that Jira does not cover" in `references/review-loop.md`).
+All four reviewers also list edge cases that could fail the PR, QA or Jira acceptance. Edge cases that Jira does not cover go to the user, with a recommendation, before the gate can pass (see "Edge cases that Jira does not cover" in `references/review-loop.md`).
 
 ## To-do list
 
-Before the first step, make a temporary to-do list from this skill's steps, so nothing is forgotten:
+Before the first step, make a temporary to-do list from this skill's steps:
 
 ```
 python3 -I ~/.agents/skills/guide/scripts/todo.py new inspect --key <KEY> --from ~/.agents/skills/inspect/SKILL.md
 ```
 
-Leave out `--key` when the task has no key. Tick each item when its Done condition is met, with the evidence: `todo.py tick inspect --key <KEY> N --note "<proof>"`. Mark a stuck item with `todo.py block`, and add a step you find later with `todo.py add`. Show the list with every update. When the last item is ticked, the list deletes itself. See "To-do lists" in the conventions file.
+Leave out `--key` when the task has no key. Tick each item when its Done condition is met, with evidence: `todo.py tick inspect --key <KEY> N --note "<proof>"`. Mark a stuck item with `todo.py block`, and add a step you find later with `todo.py add`. Show the list with every update. The list deletes itself when the last item is ticked. See "To-do lists" in the conventions file.
 
 ## Before you start
 
 Read these. Paths are under `~/.agents/skills/`.
 
 1. `blueprint/references/conventions.md`: "Writing", "Your message comes first", "Using these skills from another agent", "Agents", "Progress board", "Evidence", "Jira" and "Jira results are large".
-2. `inspect/references/setup.md`: the bug project key, repos and their layers, platform URL, API docs URL and browsers. If it is missing, copy `setup.example.md` to `setup.md` in that folder, fill in what the tools can tell you, and ask the user for the rest.
+2. `inspect/references/setup.md`: the bug project key, repos and their layers, platform URL, API docs URL and browsers. If it is missing, copy `setup.example.md` to `setup.md` in that folder, fill in what the tools tell you, and ask the user for the rest.
 
 The user's message outranks everything here. A ticket key means no questions. Stop only when a Jira write needs confirmation, when access is missing, or when the verdict is "Needs BA input".
 
@@ -47,7 +47,7 @@ The user's message outranks everything here. A ticket key means no questions. St
 Two ways in:
 
 - **Pipeline mode.** `ship` reached its QA step. The worktree, the ticket file, the plan, the decision log, the repro steps and the before proof exist.
-- **Alone.** The user typed `inspect` with a ticket key, a branch or a PR. Find the code: the worktree, the branch or the PR diff. With code, run all five checks. With no code to review (a ticket already deployed), run only the QA validation and mark the four reviewers skipped on the board.
+- **Alone.** The user typed `inspect` with a ticket key, a branch or a PR. Find the code (worktree, branch or PR diff). With code, run all five checks. With no code to review (a ticket already deployed), run only the QA validation and mark the four reviewers skipped on the board.
 
 Steps:
 
@@ -69,13 +69,13 @@ This applies to every ticket type (Bug, Story, Task).
 
 ### 2.1 Context discovery (before any testing)
 
-- Find the parent chain: parent Task, Story, Epic. Do this even when the description does not mention a parent.
+- Find the parent chain (Task, Story, Epic), even when the description names no parent.
 - Read the requirement documents as `~/.agents/skills/blueprint/references/requirements.md` says, the project knowledge file it names, and the decision log `.scratch/<KEY>-decisions.md` when it exists. Use the newest approved version and say which one. Update the knowledge file with anything new.
-- Read every parent and governing ticket. Extract every AC and requirement from each of them, not only from the ticket under validation.
-- Check each of those ACs against the implementation. Any AC from a parent or governing ticket that this ticket's scope affects is checked and reported on its own line.
-- Read the parent epic and all its child stories and tasks, including the open and future ones, to understand the full context.
+- Read every parent and governing ticket. Extract every AC and requirement from each, not only from the ticket under validation.
+- Check each of those ACs against the implementation. Any parent or governing AC that this ticket's scope affects is reported on its own line.
+- Read the parent epic and all its child stories and tasks, including open and future ones.
 - Read all comments on the ticket and on its parents.
-- Check the status and claims of every linked bug, including bugs fixed under a different, related ticket.
+- Check the status and claims of every linked bug, including bugs fixed under a different related ticket.
 - If there is no parent, say so in SCOPE.
 - If an AC is ambiguous or contradicts a parent ticket, flag it and set the verdict to "Needs BA input". Only a BA's written words settle what the product must do.
 
@@ -91,13 +91,13 @@ This applies to every ticket type (Bug, Story, Task).
 ### 2.3 Test design and execution
 
 - Cover positive, negative and edge cases for the ticket's scope.
-- Look for edge cases a second time, even if none were obvious on the first pass. Add any you find to the same results table.
+- Look for edge cases a second time, even if none were obvious. Add them to the same results table.
 - A live run is required. Run every scenario live that can be run. For Aruva use the `lane` skill.
-- Where one scenario cannot be run live (pure backend logic, security or permission checks, no suitable test data), verify it by reading the code and say so. Every case is run or listed.
+- A scenario that cannot run live (pure backend logic, security or permission checks, no suitable test data) is verified by reading the code, and you say so. Every case is run or listed.
 
 ### 2.4 Type-specific checks
 
-Work out the layers the ticket touches (front end, back end, AI, document processing, content extraction, or full-stack). Apply the matching checklist in `references/checklists.md` on top of the general cases.
+Find the layers the ticket touches (front end, back end, AI, document processing, content extraction, or full-stack). Apply the matching checklist in `references/checklists.md` on top of the general cases.
 
 ### 2.5 Validating a bug fix
 
@@ -111,12 +111,12 @@ Work out the layers the ticket touches (front end, back end, AI, document proces
 
 - Mark "Live" only when you ran the scenario. Never infer or invent a result.
 - Record the environment, the build, commit and branch, and the date and time in SCOPE.
-- UI behavior is proven with UI screenshots. When the ticket carries UI screenshots, your proof shows the same screens.
+- Prove UI behavior with UI screenshots. When the ticket carries UI screenshots, your proof shows the same screens.
 - Attach evidence for every Fail: request and response, a log excerpt, a screenshot, and the exact test data.
 - Mask secrets, tokens, passwords and personal data in logs and bug reports.
 - Record which accounts, roles and files you used as test data, and what you cleaned up afterward.
 - Save proof files in `.scratch/<KEY>-evidence/`, as the Evidence section of the conventions file says.
-- Close every browser window and tab you opened, and give the lane back.
+- Close every browser window and tab you opened, and give the lane back with `lane down N` as soon as the last scenario has a result. Run lint, tests and builds through `lane heavy -- <command>`, never beside a lane build.
 
 ## 4. Report and bugs
 

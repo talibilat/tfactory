@@ -20,10 +20,15 @@ import argparse
 import hashlib
 import importlib.util
 import json
+import os
 import re
 import subprocess
 import sys
 from pathlib import Path
+
+runtime = Path(__file__).resolve().parents[3] / ".venv"
+if __name__ == "__main__" and (runtime / "bin/python").is_file() and Path(sys.prefix) != runtime:
+    os.execv(runtime / "bin/python", [str(runtime / "bin/python"), "-I", __file__, *sys.argv[1:]])
 
 IMAGE_EXT = {".png", ".jpg", ".jpeg", ".webp"}
 LOG_EXT = {".txt", ".log"}

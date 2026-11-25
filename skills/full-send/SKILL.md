@@ -5,35 +5,35 @@ description: Takes a ticket, a bug or a request all the way to a merged PR in on
 
 Never assume a requirement. Check Jira for the latest requirements before acting. If a requirement is unclear or cannot be verified, ask the user in plain language before proceeding with work that depends on it.
 
-Be strict and vigilant. Do only what this skill says, in its order, and never step outside the system (see System rules in the conventions file).
+Do only what this skill says, in its order, and never step outside the system (see System rules in the conventions file).
 
 # full-send
 
-The user said "full send" because they are not watching this chat. You own the work from where it stands now until the PR is merged and Jira is up to date. Use it only when the user asked for it in clear words.
+The user said "full send" because they are not watching this chat. You own the work from now until the PR is merged and Jira is up to date. Use it only when the user asked for it in clear words.
 
 Read `~/.agents/skills/blueprint/references/conventions.md` first. Everything there applies.
 
 ## To-do list
 
-Before the first step, make a temporary to-do list from this skill's steps, so nothing is forgotten:
+Before the first step, make a temporary to-do list from this skill's steps:
 
 ```
 python3 -I ~/.agents/skills/guide/scripts/todo.py new full-send --key <KEY> --from ~/.agents/skills/full-send/SKILL.md
 ```
 
-Leave out `--key` when the task has no key. Tick each item when its Done condition is met, with the evidence: `todo.py tick full-send --key <KEY> N --note "<proof>"`. Mark a stuck item with `todo.py block`, and add a step you find later with `todo.py add`. Show the list with every update. When the last item is ticked, the list deletes itself. See "To-do lists" in the conventions file.
+Leave out `--key` when the task has no key. Tick each item when its Done condition is met, with evidence: `todo.py tick full-send --key <KEY> N --note "<proof>"`. Mark a stuck item with `todo.py block`, and add a step you find later with `todo.py add`. Show the list with every update. The list deletes itself when the last item is ticked. See "To-do lists" in the conventions file.
 
 ## What "full send" allows
 
 - Every hand-off between skills, with no card and no question.
-- Every test method the proof needs: the browser, the user's computer and terminal, lanes, screenshots. A rule that says "ask before testing" is replaced by this request, for this task only.
+- Every test method the proof needs: the browser, the user's computer and terminal, lanes, screenshots. This request replaces any "ask before testing" rule, for this task only. The memory rules still apply: wait in the `lane up` queue, run heavy jobs through `lane heavy`, and close every lane when testing ends.
 - Every item on the "Never ask" list in the conventions file.
 
 It does not allow the items on the "Ask first" list, a merge, or anything touching production.
 
 ## Steps
 
-1. **Pick the track and plan.** Pick the track as `blueprint` step 1 says: `as bug`, `as feature` or `as qa-return` in the call wins, then a merged PR with a newer QA comment means `qa-return`, issue type Bug means `fix-bug`, and Story or Task means `build-feature`. Run that track's skill with everything the user wrote, up to its plan. Skip its agent-plan question and use the recommended plan. It claims the task, renames the chat, takes the before proof, researches, and writes the plan.
+1. **Pick the track and plan.** Pick the track as `blueprint` step 1 says: `as bug`, `as feature` or `as qa-return` in the call wins, then a merged PR with a newer QA comment means `qa-return`, issue type Bug means `fix-bug`, and Story or Task means `build-feature`. Run that track's skill with everything the user wrote, up to its plan. Skip its agent-plan question and use the recommended plan. It claims the task, renames the chat, takes the before proof, researches and writes the plan.
    Done when `blueprint` step 9 has posted the plan and the simple explanation, and `gate before` printed PASS. A bug that will not reproduce is worked on for 3 rounds first (`reproduce` step 4). If it still will not, or a QA return's verdict stops the work, the run ends here, with the report and a question.
 2. **Build and check.** Run `ship`. It builds with one builder per slice worktree, calls `inspect`, fixes what `inspect` finds, and repeats until the gate passes.
    Done when the track's definition of done holds, the score is 100, the live run passed and the QA verdict is Done or Done with notes, all on one commit.
@@ -41,7 +41,7 @@ It does not allow the items on the "Ask first" list, a merge, or anything touchi
    Done when `gate after` printed PASS and the comparison images exist.
 4. **Open the PR and update Jira.** `ship` close-out.
    Done when `proof.py verify` printed PASS: the comparison images are on the Jira ticket and in every PR description.
-5. **Babysit.** Run `babysit` on every PR. Fix CI, answer and resolve every comment, keep the branch up to date. After each push, run the live steps the fix touches and add the fresh proof.
+5. **Babysit.** Run `babysit` on every PR. Fix CI, clear every warning (fix it, or write why it cannot be fixed), answer and resolve every comment, keep the branch up to date. After each push, run the live steps the fix touches and add the fresh proof.
    Done when CI is green, nothing is unresolved, and the ticket is in Code Review with a worklog.
 6. **Stay until merged.** Keep the watch running. Come back for every new comment, failed check or conflict. Never merge the PR yourself, unless the user wrote "full send and merge" and the repo's rules allow it.
    Done when GitHub reports the PR as merged.
@@ -51,11 +51,11 @@ It does not allow the items on the "Ask first" list, a merge, or anything touchi
 
 Ending the turn without a watcher or a running sub-agent stops the work, because nobody will prompt you again. While sub-agents run, end the turn and let their completion wake you. While the PR is open, wait with `watch_pull_request`, as `babysit` says. The chat stays open until step 7 is done.
 
-Updates follow the schedule in the Progress board section of the conventions file: the table, what you just fixed and why, and what you are fixing now, in simple words. Jira follows the Jira updates section.
+Updates follow the Progress board section of the conventions file: the table, what you just fixed and why, and what you are fixing now, in simple words. Jira follows the Jira updates section.
 
 ## When to ask
 
-A question in a normal message goes unseen. Use `AskUserQuestion`, so the chat shows that it is waiting, and put all the context in the question. Ask only when you cannot continue alone:
+A question in a normal message goes unseen. Use `AskUserQuestion`, so the chat shows it is waiting, and put all the context in the question. Ask only when you cannot continue alone:
 
 - the bug will not reproduce or is already fixed (no plan is written, so `full-send` stops there with the short report of why and how to get unblocked), or the change cannot be proven
 - a BA's words are missing or conflict, and the answer changes what gets built

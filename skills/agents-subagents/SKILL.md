@@ -5,15 +5,15 @@ description: How to use Claude Code subagents, from code.claude.com/docs/en/sub-
 
 # agents-subagents
 
-A subagent is a helper Claude that the main Claude starts inside the session. It works in its own context window with its own prompt, tools and permissions, and only its final summary comes back. Source: https://code.claude.com/docs/en/sub-agents
+A subagent is a helper Claude the main Claude starts inside the session. It has its own context window, prompt, tools and permissions, and only its final summary comes back. Source: https://code.claude.com/docs/en/sub-agents
 
 ## When it fits
 
-- A side task would fill the main chat with search results, logs or file contents nobody will read again.
+- A side task would fill the main chat with search results, logs or file contents.
 - The work needs limits, such as a reviewer with read-only tools.
 - Simple work can run on a cheaper model such as Haiku.
 
-Keep work in the main chat for back-and-forth with the user, for phases that share a lot of context, for quick targeted changes, and when speed matters.
+Keep work in the main chat for back-and-forth with the user, phases that share a lot of context, quick targeted changes, and when speed matters.
 
 ## Built-in types
 
@@ -44,7 +44,7 @@ Where files live, highest priority first: managed settings, the `--agents` JSON 
 
 Frontmatter fields: `name` and `description` are required. Optional: `tools` or `disallowedTools`, `model` (`sonnet`, `opus`, `haiku`, `fable`, a full model ID, or `inherit`), `permissionMode`, `maxTurns`, `skills` (preloaded), `mcpServers`, `hooks`, `memory` (`user`, `project`, `local`), `effort`, `isolation: worktree`, `background`, `omitClaudeMd`, `initialPrompt`. Plugin agents ignore `hooks`, `mcpServers` and `permissionMode`.
 
-Keep each `description` short. Past about 15,000 tokens of combined descriptions, Claude Code warns at startup. Put detail in the body, which loads only when the agent runs.
+Keep each `description` short: past about 15,000 tokens of combined descriptions, Claude Code warns at startup. Put detail in the body, which loads only when the agent runs.
 
 ## Starting and steering
 
@@ -55,7 +55,7 @@ Keep each `description` short. Past about 15,000 tokens of combined descriptions
 
 ## What a subagent knows
 
-It starts fresh: its prompt, your delegation message, the CLAUDE.md files, a git status snapshot and any preloaded skills. It does not get your chat history, auto memory or output style, so the brief must carry everything it needs. A forked subagent (`/subtask`) inherits the full conversation instead.
+It starts with only its prompt, your delegation message, the CLAUDE.md files, a git status snapshot and any preloaded skills. It gets no chat history, auto memory or output style, so the brief must carry everything it needs. A forked subagent (`/subtask`) inherits the full conversation instead.
 
 ## Limits
 

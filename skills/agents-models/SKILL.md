@@ -5,7 +5,7 @@ description: Which Claude model and effort level to use for which task or agent,
 
 # agents-models
 
-Pick the cheapest model and lowest effort that still does the job well, and raise them only for hard parts. Source: https://code.claude.com/docs/en/model-config
+Pick the cheapest model and lowest effort that does the job well. Raise them only for hard parts. Source: https://code.claude.com/docs/en/model-config
 
 ## Models
 
@@ -19,7 +19,7 @@ Pick the cheapest model and lowest effort that still does the job well, and rais
 
 Other providers map the aliases to older versions; check `/model`. To pin a version, use the full ID, such as `claude-opus-5-5`.
 
-For `fable`: describe the outcome rather than the steps, hand it unclear problems and large tasks, and skip reminders to verify, since it checks its own work. Requests its safety checks flag, mostly in security and biology, can fall back to another model.
+For `fable`: describe the outcome, not the steps; hand it unclear problems and large tasks; skip reminders to verify, since it checks its own work. Requests its safety checks flag, mostly in security and biology, can fall back to another model.
 
 ## Effort
 
@@ -35,7 +35,7 @@ Set it with `/effort`, `--effort`, `CLAUDE_CODE_EFFORT_LEVEL`, or `effortLevel` 
 
 ## Defaults for agents
 
-These are house defaults, not doc rules:
+House defaults, not doc rules:
 
 | Agent's job | Model and effort |
 |---|---|

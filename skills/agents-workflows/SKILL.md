@@ -5,11 +5,11 @@ description: How to run Claude Code dynamic workflows, from code.claude.com/docs
 
 # agents-workflows
 
-A dynamic workflow is a JavaScript script that runs many subagents. Claude writes the script, a runtime runs it in the background, and only the final answer lands in the chat. Source: https://code.claude.com/docs/en/workflows
+A dynamic workflow is a JavaScript script that runs many subagents. Claude writes it, a runtime runs it in the background, and only the final answer reaches the chat. Source: https://code.claude.com/docs/en/workflows
 
 ## When it fits
 
-Jobs too big for one conversation to coordinate, or that need a check across agents: a bug sweep across the codebase, a 500-file migration, research cross-checked between sources, a plan drafted from several angles.
+Jobs too big for one conversation to coordinate, or that need a check across agents: a codebase bug sweep, a 500-file migration, research cross-checked between sources, a plan drafted from several angles.
 
 | | Subagents | Agent teams | Workflows |
 |---|---|---|---|
@@ -19,9 +19,9 @@ Jobs too big for one conversation to coordinate, or that need a check across age
 
 ## Starting one
 
-- The user says "use a workflow" or includes `ultracode` in their own typed prompt. A choice of the workflow option in an `agents-first` question counts too.
+- The user says "use a workflow" or types `ultracode` in their own prompt. Choosing the workflow option in an `agents-first` question counts too.
 - `/deep-research <question>` is the built-in one: it searches from several angles, checks sources and returns a cited report.
-- `/effort ultracode` makes Claude plan a workflow for every substantial task in the session. It spends far more tokens; turn it off with `/effort ultracode off`.
+- `/effort ultracode` makes Claude plan a workflow for every substantial task in the session. It spends far more tokens. Turn it off with `/effort ultracode off`.
 
 Before writing a script, load the `workflow-authoring` skill. The script shape:
 
@@ -38,13 +38,13 @@ return audits.filter(Boolean)
 
 ## Approval
 
-The CLI shows the planned phases with Yes, "don't ask again" (for named workflows only), view script, and No. Auto mode asks on the first launch only. Bypass mode, `claude -p` and the Agent SDK don't show the prompt; there, allow it with a `Workflow` permission rule. Add the tools agents need to your allow rules before a long run.
+The CLI shows the planned phases with Yes, "don't ask again" (named workflows only), view script, and No. Auto mode asks on the first launch only. Bypass mode, `claude -p` and the Agent SDK show no prompt; allow it there with a `Workflow` permission rule. Before a long run, add the tools agents need to your allow rules.
 
 ## Watching and managing
 
 `/workflows` lists runs. Keys: arrows select, Enter drills in, `f` filters by status, `p` pauses or resumes, `x` stops an agent or the run, `r` restarts an agent, `s` saves the script.
 
-Resume a stopped run by asking Claude to relaunch the same script. Completed agents return saved results; the first changed or failed agent and every agent after it run again. A run hitting the usage limit pauses and continues after the reset in interactive sessions.
+Resume a stopped run by asking Claude to relaunch the same script. Completed agents return saved results. The first changed or failed agent and every agent after it run again. In interactive sessions, a run that hits the usage limit pauses and continues after the reset.
 
 ## Saving and sharing
 

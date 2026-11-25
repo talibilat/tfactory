@@ -5,11 +5,11 @@ description: The feature track of the pipeline. Takes a story or task, or a new 
 
 Never assume a requirement. Check Jira for the latest requirements before acting. If a requirement is unclear or cannot be verified, ask the user in plain language before proceeding with work that depends on it.
 
-Be strict and vigilant. Do only what this skill says, in its order, and never step outside the system (see System rules in the conventions file).
+Do only what this skill says, in its order, and never step outside the system (see System rules in the conventions file).
 
 # build-feature
 
-The track for new or changed behavior. There is no bug to reproduce. Instead, every acceptance criterion is written down with its BA source before planning, and each one is proven at the end.
+The track for new or changed behavior. There is no bug to reproduce. Write down every acceptance criterion with its BA source before planning, and prove each one at the end.
 
 First read `~/.agents/skills/blueprint/references/conventions.md`. The user's message outranks everything here (see "Your message comes first" in that file). Words the user adds to the call: `plan only` or `just blueprint` stops after step 5, `build only` stops after the build, `agents N` or `no agents` sets the agent plan, `model <name>` sets the agents' model, `skip proof` waives the proof (only the user can say it).
 
@@ -19,18 +19,18 @@ First read `~/.agents/skills/blueprint/references/conventions.md`. The user's me
 python3 -I ~/.agents/skills/guide/scripts/todo.py new build-feature --key <KEY> --from ~/.agents/skills/build-feature/SKILL.md
 ```
 
-Leave out `--key` when the task has no key. Tick each item when its Done condition is met, with the evidence. See "To-do lists" in the conventions file.
+Leave out `--key` when the task has no key. Tick each item when its Done condition is met, with evidence. See "To-do lists" in the conventions file.
 
 ## 1. Agree the agent plan
 
-Read `~/.agents/skills/agents-first/SKILL.md` and ask its one question, once, for the whole task. Recommend this plan, with the counts filled in:
+Read `~/.agents/skills/agents-first/SKILL.md` and ask its one question, once, for the whole task. Recommend this plan with the counts filled in:
 
 - **Research:** one read-only sub-agent per track in blueprint step 6, plus the `design` and `slices` tracks from step 4 below, all at once. Collection tracks (`history`, `code-<repo>`, `tests-data`) on Haiku 5.5, Jira and design tracks on Sonnet 5.5, all at medium effort.
 - **Build:** one Sonnet builder per slice, each in its own slice worktree (ship step 1), batched by dependency.
 - **Check:** the four `inspect` reviewers and the live run, at once.
 - **Very large features** (more than about 25 files, or slices that keep going after the first batch): offer a workflow instead of separate builders, as `agents-workflows` says, and try it on one slice first.
 
-Skip the question under `full-send`, or when the call already says how many agents to use. Then use the recommended plan and say so in one line.
+Skip the question under `full-send`, or when the call already sets the agent count. Then use the recommended plan and say so in one line.
 
 Done when the user picked a plan, or the call already set it.
 
@@ -49,7 +49,7 @@ Done when blueprint step 4 is done and the ticket file starts with `Track: featu
    ```
 
    One row per criterion. A criterion with no BA quote is not a criterion: it goes under Blockers as a question. Fill the last two columns in step 5.
-2. Write the steps to `.scratch/<KEY>-repro.md` with the template in `reproduce` step 1, so the after proof replays the same steps. Its first line is `Reproduced: not a bug`, and it keeps the `Live environment:` and `Method:` lines and one numbered row per step with a proof file name. Leave the "What the report says happens" column as "-". Cover every screen or endpoint the feature changes. For a new screen, capture where it will appear, such as the menu or the page that links to it.
+2. Write the steps to `.scratch/<KEY>-repro.md` with the template in `reproduce` step 1, so the after proof replays the same steps. Its first line is `Reproduced: not a bug`. Keep the `Live environment:` and `Method:` lines and one numbered row per step with a proof file name. Leave the "What the report says happens" column as "-". Cover every screen or endpoint the feature changes. For a new screen, capture where it will appear, such as the menu or the page that links to it.
 3. Capture the current state with `lane` (or the browser tools) and `proof before`, which saves each step's picture under the row's file name and writes the proof manifest.
 4. Run the before gate and paste its last line, then mark the stage done on the board:
 
@@ -87,7 +87,7 @@ Done when blueprint step 9 has posted the plan and every acceptance row maps to 
 
 ## 6. Build, check and ship
 
-Run `ship` with the key and the user's original message. On this track, the work is done when all of these hold on one commit:
+Run `ship` with the key and the user's original message. The work is done when all of these hold on one commit:
 
 - every acceptance row's test passes
 - every acceptance row has its after picture or API proof, and `proof after` says `Proof: COMPLETE`
@@ -102,3 +102,4 @@ Done when the PR is merged, or the user stopped the work.
 - Never build a criterion that has no BA source. It is a question for the BA.
 - Never let two slices own the same file.
 - Never mark a criterion done without its own passing test and its own proof.
+- Never use Docker or a lane without the memory rules in the conventions file. Wait in the `lane up` queue, run lint, tests and builds through `lane heavy -- <command>`, and close every lane the moment testing ends.

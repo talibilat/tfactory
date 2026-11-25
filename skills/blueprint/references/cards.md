@@ -2,7 +2,7 @@
 
 A card is one `AskUserQuestion` call with one question and 2 to 4 options. The tool adds a free-text "Other" box. Headers are 12 characters or fewer.
 
-Cards appear only when `blueprint` is typed alone in an empty chat. Ask one card at a time, because each answer changes the counts on the next card. A ticket key typed into "Other" on any card ends the questions and starts that ticket.
+Cards appear only when `blueprint` is typed alone in an empty chat. Ask one card at a time, because each answer changes the next card's counts. A ticket key typed into "Other" on any card ends the questions and starts that ticket.
 
 Fetch the user's own To Do tickets once with the candidate query, drop the blocked ones, and keep the list in memory. Every count below is recalculated from the tickets still left after the answers so far.
 

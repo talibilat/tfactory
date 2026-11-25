@@ -5,7 +5,7 @@ description: The bug track of the pipeline. Takes a bug ticket, or a bug describ
 
 Never assume a requirement. Check Jira for the latest requirements before acting. If a requirement is unclear or cannot be verified, ask the user in plain language before proceeding with work that depends on it.
 
-Be strict and vigilant. Do only what this skill says, in its order, and never step outside the system (see System rules in the conventions file).
+Do only what this skill says, in its order, and never step outside the system (see System rules in the conventions file).
 
 # fix-bug
 
@@ -19,18 +19,18 @@ First read `~/.agents/skills/blueprint/references/conventions.md`. The user's me
 python3 -I ~/.agents/skills/guide/scripts/todo.py new fix-bug --key <KEY> --from ~/.agents/skills/fix-bug/SKILL.md
 ```
 
-Leave out `--key` when the task has no key. Tick each item when its Done condition is met, with the evidence. See "To-do lists" in the conventions file.
+Leave out `--key` when the task has no key. Tick each item when its Done condition is met, with evidence. See "To-do lists" in the conventions file.
 
 ## 1. Agree the agent plan
 
-Read `~/.agents/skills/agents-first/SKILL.md` and ask its one question, once, for the whole task. Recommend this plan, with the counts filled in:
+Read `~/.agents/skills/agents-first/SKILL.md` and ask its one question, once, for the whole task. Recommend this plan with the counts filled in:
 
 - **Research:** one read-only sub-agent per track in blueprint step 6, all at once. Collection tracks (`history`, `code-<repo>`, `tests-data`) on Haiku 5.5, Jira tracks on Sonnet 5.5, all at medium effort.
 - **Cause unclear after reproduce:** 3 to 5 sub-agents, one theory each, each told to disprove the others' theories. When agent teams are on (`CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1`), offer an agent team for this instead, as `agents-teams` says.
 - **Build:** one Sonnet builder per subpart, each in its own slice worktree (ship step 1).
 - **Check:** the four `inspect` reviewers and the live run, at once.
 
-Skip the question under `full-send`, or when the call already says how many agents to use. Then use the recommended plan and say so in one line.
+Skip the question under `full-send`, or when the call already sets the agent count. Then use the recommended plan and say so in one line.
 
 Done when the user picked a plan, or the call already set it.
 
@@ -42,7 +42,7 @@ Done when blueprint step 4 is done and the ticket file starts with `Track: bug`.
 
 ## 3. Reproduce first (a hard gate)
 
-Run the `reproduce` skill. It checks the history, replays the bug step by step in the live environment (local Docker or a lane on the current default branch, or the deployed dev environment), saves the before proof through `proof before`, writes a failing test and names the root cause. It writes one of three results on the first line of `.scratch/<KEY>-repro.md`:
+Run the `reproduce` skill. It checks the history, replays the bug step by step in the live environment (local Docker or a lane on the current default branch, or the deployed dev environment), saves the before proof through `proof before`, writes a failing test and names the root cause. It writes one result on the first line of `.scratch/<KEY>-repro.md`:
 
 | Result | What you do |
 |---|---|
@@ -54,9 +54,9 @@ Run the `reproduce` skill. It checks the history, replays the bug step by step i
 python3 -I ~/.agents/skills/blueprint/scripts/proof.py gate before <KEY>
 ```
 
-It must print `before gate: PASS`. Paste its last line in chat. Any FAIL line means you fix what it names before moving on.
+It must print `before gate: PASS`. Paste its last line in chat. Fix whatever any FAIL line names before moving on.
 
-On `no` or `already fixed`, `reproduce` has already tried to clear the blocker itself for 3 rounds. Start no research and write no plan:
+On `no` or `already fixed`, `reproduce` has already tried 3 rounds to clear the blocker. Start no research and write no plan:
 
 1. Post the short "Could not reproduce" report from `reproduce` step 4: what was tried, what blocks it, and how to resolve it.
 2. Offer a draft Jira comment for the reporter. Post it only after the user says yes.
@@ -83,7 +83,7 @@ Done when blueprint step 9 has posted the plan.
 
 ## 5. Build, check and ship
 
-Run `ship` with the key and the user's original message. On this track, the work is done when all of these hold on one commit:
+Run `ship` with the key and the user's original message. The work is done when all of these hold on one commit:
 
 - the failing test from `reproduce` passes
 - every repro step shows the expected behavior, and `proof after` says `Proof: COMPLETE`
@@ -98,3 +98,4 @@ Done when the PR is merged, or the user stopped the work.
 - Never research, decide or plan a bug that has not reproduced.
 - Never fix a symptom when the root cause is known. The plan names the cause and fixes it there.
 - Never skip the before proof. Only the user can waive it, by saying "skip proof".
+- Never use Docker or a lane without the memory rules in the conventions file. Wait in the `lane up` queue, run lint, tests and builds through `lane heavy -- <command>`, and close every lane the moment testing ends.

@@ -1,6 +1,6 @@
 # Requirements and project knowledge
 
-Every plan, build and review starts from the original requirement documents, not from the ticket text alone. Tickets are summaries. The requirement documents are the truth.
+Every plan, build and review starts from the original requirement documents, not the ticket text alone. Tickets are summaries.
 
 ## The single authority
 
@@ -39,12 +39,10 @@ Follow the links from the ticket until you reach the source. Stop at 3 hops from
 
 ## Make sense of versions
 
-Requirement documents often exist in several versions.
-
 - Order the versions by date and version number. The newest approved one wins. Say which one you used and its date.
 - A later ticket, comment or change request can override a document. Record the override and where it came from.
 - When two sources disagree and nothing says which is newer, that is a conflict. Write it under Blockers in the plan. In autopilot, take the newest source and flag the conflict in the PR and the Jira comment. The QA verdict "Needs BA input" is for conflicts that change what gets built.
-- Never invent a requirement. Every requirement in a plan, build or review must be traceable to Jira (ticket, parent chain, Confluence page or attachment) with the source named. A gap is written as a gap, not filled in.
+- Never invent a requirement. Every requirement in a plan, build or review must trace to Jira (ticket, parent chain, Confluence page or attachment) with the source named. Write a gap as a gap.
 
 ## Keep project knowledge
 
@@ -71,7 +69,7 @@ Updated: <date> by <ticket key>
 
 Rules:
 
-- Read the file first. If it exists and its Updated date is recent and no source changed, use it and skip re-reading every document. Check the version list of each source for changes.
+- Read the file first. If it is recent and no source changed (check each source's version list), use it and skip re-reading every document.
 - Update it whenever a search finds something new or something changed: a new version, an override, a gap closed. Edit the existing line, do not append duplicates.
 - Put a one-line "Requirements used" entry in the plan, listing the document, version and date. Give reviewers and `inspect` the knowledge file path and the decision log path as well as the ticket and plan paths.
 - A change you learn about mid-build (a comment, a new version) goes into the knowledge file and the plan before the next batch starts. If it changes the acceptance criteria, treat it as a failed round and replan.

@@ -1,15 +1,15 @@
 # Live run
 
-Nothing passes without one. Unit tests, lint and builds do not count. A live run exercises the changed behavior for real and checks what a user or caller would see.
+Nothing passes without one. Unit tests, lint and builds do not count. A live run exercises the changed behavior for real and checks what a user or caller sees.
 
 ## Pick the mode
 
 1. **The agent runs it (preferred).**
-   - Aruva: use the `lane` skill. It starts a private copy of the app (a lane) from the worktree, so parallel agents never share ports or data, and it has commands for login, screenshots, API calls and logs. Give the lane back with `lane down` when the run ends.
+   - Aruva: use the `lane` skill. It starts a private copy of the app (a lane) from the worktree, so parallel agents never share ports or data, with commands for login, screenshots, API calls and logs. Give the lane back with `lane down` when the run ends, also after a failure (`lane run` does this for you). If memory is short, `lane up` waits in a queue. Wait, never force it.
    - Web UI: open the running app in a browser the agent controls and click through the steps. In T3, use the preview tools (`preview_open`, `preview_navigate`, `preview_act`, `preview_snapshot`), loaded with `ToolSearch`. In other agents, use the agent's own browser tool.
    - API, worker or CLI: start the service from the worktree with the command in its README, against local or test data. Call it with `curl` or the real client. Save status codes and response bodies.
    - Docs or config change: follow the written steps literally and check the result.
-2. **The user runs it.** Use this when the agent cannot run the change: it needs credentials, a real account, a device, shared or staging data, or a third-party service. Give numbered steps and the exact result to expect at each step. Wait for the answer. The user's "pass" or "fail", with their notes, is the result.
+2. **The user runs it.** Use this when the agent cannot run the change (it needs credentials, a real account, a device, shared or staging data, or a third-party service). Give numbered steps and the exact result to expect at each step. Wait. The user's "pass" or "fail", with notes, is the result.
 
 Never test against production. Shared or staging systems need the user's OK first.
 
@@ -17,7 +17,7 @@ Never test against production. Shared or staging systems need the user's OK firs
 
 1. Start with `.scratch/<KEY>-repro.md`. Replay its steps exactly as the before proof was taken: same place, same account, same data, same method (visible Chrome on the lane). Save each step's proof into `.scratch/<KEY>-evidence/after/` under the same file name as in `before/`, then call the `proof` skill in `after` mode (`proof after <KEY>`), which circles the changes and checks each step against what was asked, and run `python3 -I ~/.agents/skills/blueprint/scripts/proof.py gate after <KEY>`. It must print PASS.
 2. Then run the plan's Live test section: the other numbered steps, each with its action and expected result. If it is thin, write it now. Always include one nearby flow that must still work.
-3. Sync every repo with dev first (`~/.agents/skills/lane/scripts/sync-dev.sh <worktree> ...`), so a local copy is never behind. If a worktree moved, rebuild and run the baseline again. Run on the final commit. Record `git -C <wt> rev-parse HEAD`. Start services in the background. Stop them afterward and check that the ports are free.
+3. Sync every repo with dev first (`~/.agents/skills/lane/scripts/sync-dev.sh <worktree> ...`). If a worktree moved, rebuild and run the baseline again. Run on the final commit. Record `git -C <wt> rev-parse HEAD`. Start services in the background. Stop them afterward and check that the ports are free.
 4. Compare each step with its expected result. Take a screenshot or save the output for each step. Save the logs for the changed action: backend and AI logs, the browser console and the network request.
 5. Write `.scratch/<KEY>-live-test.md`:
 
