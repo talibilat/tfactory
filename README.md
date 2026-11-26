@@ -1,11 +1,13 @@
-# tstack
+# tfactory
 
-The agent skills I use every day to take a Jira ticket from To Do to a merged
-pull request, with before and after proof. They work in Claude Code, Codex and
+tfactory is a software factory. A Jira ticket goes in, and a merged pull request
+with before and after proof comes out. Every step is checked by a tool, not by
+the agent's word, and only the user can waive a gate. It is a set of agent
+skills and tools that take a ticket from To Do to a merged pull request. They work in Claude Code, Codex and
 Cursor. Some use [T3 Code](https://github.com/pingdotgg/t3code) features when
 they are available and fall back to native tools when they are not.
 
-The idea and the layout of this repo come from
+tfactory was called tstack before. The idea and the layout of this repo come from
 [t3dotgg/tstack](https://github.com/t3dotgg/tstack). The skills are my own.
 
 ## Skills
@@ -325,8 +327,8 @@ Every skill stops and asks before these: a force-push or history rewrite, a data
 On a new laptop, one command installs every skill for Claude Code, Codex and Cursor, plus the tools the skills run:
 
 ```bash
-git clone https://github.com/talibilat/tstack ~/Documents/Projects/tstack
-cd ~/Documents/Projects/tstack
+git clone https://github.com/talibilat/tfactory ~/Documents/Projects/tfactory
+cd ~/Documents/Projects/tfactory
 make install
 make check
 ```

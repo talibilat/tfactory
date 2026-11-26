@@ -1,6 +1,6 @@
 # Quality gates
 
-Two tool checks run in `ship` step 3, before `inspect`. Each gives a pass or a fail, so no agent judges them. Both tools are our forks of Uncle Bob's crapper and mutator, bundled in `~/.agents/tools/`. `make install` in the tstack checkout installs them. Run them through `~/.agents/tools/quality`, written `quality` below.
+Two tool checks run in `ship` step 3, before `inspect`. Each gives a pass or a fail, so no agent judges them. Both tools are our forks of Uncle Bob's crapper and mutator, bundled in `~/.agents/tools/`. `make install` in the tfactory checkout installs them. Run them through `~/.agents/tools/quality`, written `quality` below.
 
 Run each tool from the task worktree root of the repo that changed. A task with several repos runs the gates once per changed repo. Always pass `--base origin/<default branch>`, so the gates check committed work as well as local edits.
 

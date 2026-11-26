@@ -1,6 +1,6 @@
 ---
 name: guide
-description: The guide to the tstack skills (full-send, fix-bug, build-feature, qa-return, blueprint, reproduce, proof, ship, inspect, lane, babysit, council, deep-spec, modernize, explain-jira, explain-pr, unslop, agents-first). Says when and how to use each one, and from the middle of any chat says where the work stands and what to do next. Also lists every skill installed on this machine. Use when the user types guide, asks what to do next, which skill fits, how a skill works, or which skills exist.
+description: The guide to the tfactory skills (full-send, fix-bug, build-feature, qa-return, blueprint, reproduce, proof, ship, inspect, lane, babysit, council, deep-spec, modernize, explain-jira, explain-pr, unslop, agents-first). Says when and how to use each one, and from the middle of any chat says where the work stands and what to do next. Also lists every skill installed on this machine. Use when the user types guide, asks what to do next, which skill fits, how a skill works, or which skills exist.
 ---
 
 Never assume a requirement. Check Jira for the latest requirements before acting. If a requirement is unclear or cannot be verified, ask the user in plain language before proceeding with work that depends on it.

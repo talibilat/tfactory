@@ -9,5 +9,5 @@ if len(sys.argv) < 2 or sys.argv[1] not in {"crapper", "mutator"}:
 
 python = Path(__file__).resolve().parents[1] / ".venv/bin/python"
 if not python.is_file():
-    raise SystemExit("Run make install in the tstack checkout first.")
+    raise SystemExit("Run make install in the tfactory checkout first.")
 os.execv(python, [str(python), "-I", "-m", *sys.argv[1:]])
