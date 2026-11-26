@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import os
+import re
 import shlex
 import signal
 import subprocess
@@ -217,9 +218,47 @@ def _rust_plan(root: Path, source: Path) -> tuple[Command, Path]:
     return ["cargo", "test"], directory
 
 
+_SKIPPED_DIRECTORIES = {".venv", "venv", "node_modules", "target", ".git", "__pycache__"}
+
+
+def _related_tests(directory: Path, source: Path) -> list[str]:
+    """Test files that import the source module, as paths relative to directory.
+
+    Empty when none are found, so the caller keeps the full suite.
+    """
+
+    try:
+        parts = source.resolve().relative_to(directory.resolve()).with_suffix("").parts
+    except ValueError:
+        return []
+    candidates = [".".join(parts)]
+    if parts and parts[0] == "src":
+        candidates.append(".".join(parts[1:]))
+    patterns = [re.compile(rf"\b{re.escape(name)}\b") for name in candidates if name]
+    if len(parts) > 1:
+        package = re.escape(".".join(parts[:-1]))
+        patterns.append(re.compile(rf"from\s+{package}\s+import\s+[^\n]*\b{re.escape(parts[-1])}\b"))
+    found = []
+    for dirpath, dirnames, filenames in os.walk(directory):
+        dirnames[:] = [name for name in dirnames if name not in _SKIPPED_DIRECTORIES]
+        for name in filenames:
+            if not (name.startswith("test_") or name.endswith("_test.py")) or not name.endswith(".py"):
+                continue
+            path = Path(dirpath) / name
+            text = _read(path)
+            if any(pattern.search(text) for pattern in patterns):
+                found.append(path.relative_to(directory).as_posix())
+    return sorted(found)
+
+
 def _python_plan(root: Path, source: Path) -> tuple[Command, Path]:
     directory = _nearest_marker(source, root, ("pyproject.toml", "pytest.ini", "setup.cfg"))
-    return _python_command(directory), directory
+    command = _python_command(directory)
+    if os.environ.get("MUTATOR_RELATED_TESTS") == "1" and command[-1] == "pytest":
+        related = _related_tests(directory, source)
+        if related:
+            command = [*command, *related]
+    return command, directory
 
 
 _PLANS = {

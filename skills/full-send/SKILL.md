@@ -29,7 +29,9 @@ Leave out `--key` when the task has no key. Tick each item when its Done conditi
 - Every test method the proof needs: the browser, the user's computer and terminal, lanes, screenshots. This request replaces any "ask before testing" rule, for this task only. The memory rules still apply: wait in the `lane up` queue, run heavy jobs through `lane heavy`, and close every lane when testing ends.
 - Every item on the "Never ask" list in the conventions file.
 
-It does not allow the items on the "Ask first" list, a merge, or anything touching production.
+It does not allow the items on the "Ask first" list, a merge, a waiver of any check (the flow check before inspection included), or anything touching production. Only the user can approve a waiver, as "Flow check before inspection" in the conventions file says.
+
+`full-send` joins the ticket's run, as "One run per ticket" in the conventions file says. On a ticket that already has a run, it resumes from what is already verified. The chat title follows "Chat titles" in the same file.
 
 ## Steps
 
@@ -61,6 +63,7 @@ A question in a normal message goes unseen. Use `AskUserQuestion`, so the chat s
 - a BA's words are missing or conflict, and the answer changes what gets built
 - the next step is on the "Ask first" list
 - the review loop is stuck, or the PR cannot pass and you cannot fix why
+- the flow check before inspection blocks
 - another PR makes this one obsolete
 
 Decide everything else yourself and list those decisions in the report. If the question tool gives no answer, leave the PR open and start your final message with the question.

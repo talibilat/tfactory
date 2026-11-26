@@ -14,6 +14,19 @@ Layout, under <dir>/<KEY>-evidence/:
   after/    the same steps, same file names, after the fix
   compare/  one side-by-side image per step, plus compare.md
 
+Every shot must prove something. Through pair.py, each gate also fails a shot whose
+'looking at' line (its purpose) is generic or repeats another step's, whose file name is
+not NN-<words>.png with NN the step number, that matches another step's shot in the same
+set (before/ or after/, byte for byte or with no change pair.py can see), or that belongs
+to no step. Each gate prints a table of its set: step, file, purpose and what changed
+since the previous shot. Only a reason recorded with `pair.py item <KEY> N
+--allow-duplicate|--allow-generic|--allow-name "<why>"` lets a shot through.
+
+A shot under 600x300 or 5,000 bytes fails as too small to be a real screenshot. A
+deliberate crop or zoom passes when its step's 'looking at' line says it is a crop or
+zoom and a reason is recorded with `pair.py item <KEY> N --allow-small "<why>"`.
+A shot that cannot be opened fails, and the gate leaves it out of the comparisons.
+
 Exit code 0 means PASS. Any FAIL line means the work does not move on.
 """
 import argparse
@@ -47,6 +60,7 @@ def repro_file(args):
 class Report:
     def __init__(self):
         self.failures = []
+        self.bad_files = []  # pictures check_image failed, so pair.py's line about them is not repeated
 
     def ok(self, text):
         print(f"ok    {text}")
@@ -54,6 +68,11 @@ class Report:
     def fail(self, text):
         self.failures.append(text)
         print(f"FAIL  {text}")
+
+    def pair_problem(self, text):
+        """A FAIL line from pair.py, unless it repeats check_image's verdict on a file that cannot be opened."""
+        if not any(text.startswith(f"{p.parent.name}/{p.name} cannot be opened") for p in self.bad_files):
+            self.fail(text)
 
     def finish(self, label):
         if self.failures:
@@ -76,12 +95,39 @@ def logs_in(folder):
     return sorted(p for p in folder.glob("*") if p.suffix.lower() in LOG_EXT) if folder.is_dir() else []
 
 
-def check_image(path, report):
+def steps_by_file(args):
+    """{file name without extension: step} from <KEY>-proof.json, or {} before pair.py init."""
+    path = Path(args.dir) / f"{args.key}-proof.json"
+    try:
+        return {item["step"]: item for item in json.loads(path.read_text()).get("items", [])}
+    except (OSError, ValueError, KeyError, TypeError, AttributeError):
+        return {}
+
+
+def small_hint(key, item):
+    """How a deliberate crop or zoom gets through the size floor."""
+    if not item:
+        return (f". If it is a deliberate crop or zoom, add it as a step, say so in its 'looking at' line "
+                f"and record why with pair.py item {key} <N> --allow-small \"<why>\"")
+    if item.get("allow_small"):
+        return (f". Step {item['n']} has an --allow-small reason, but its 'looking at' line does not say it is a crop or zoom. "
+                f"Say so with pair.py item {key} {item['n']} --looking-at")
+    return (f". If it is a deliberate crop or zoom, say so in step {item['n']}'s 'looking at' line "
+            f"and record why with pair.py item {key} {item['n']} --allow-small \"<why>\"")
+
+
+def check_image(path, report, key=None, item=None):
+    """True when the picture is a real screenshot. A crop or zoom may be smaller when its step
+    allows it (pair.py small_allowed)."""
+    small_ok = load_pair().small_allowed(item)
     data = path.read_bytes()
-    if len(data) < MIN_IMAGE_BYTES:
-        report.fail(f"{path.name} is only {len(data)} bytes, too small to be a real screenshot")
+    if len(data) < MIN_IMAGE_BYTES and not small_ok:
+        report.bad_files.append(path)
+        hint = small_hint(key, item) if data.startswith(SIGNATURES) else ""
+        report.fail(f"{path.name} is only {len(data)} bytes, too small to be a real screenshot{hint}")
         return False
     if not data.startswith(SIGNATURES):
+        report.bad_files.append(path)
         report.fail(f"{path.name} is not a PNG, JPEG or WebP image")
         return False
     try:
@@ -89,8 +135,8 @@ def check_image(path, report):
 
         with Image.open(path) as img:
             img.load()  # fully decode, so a truncated or corrupt file fails here
-            if img.width < 600 or img.height < 300:
-                report.fail(f"{path.name} is {img.width}x{img.height}, too small to be a real screenshot")
+            if (img.width < 600 or img.height < 300) and not small_ok:
+                report.fail(f"{path.name} is {img.width}x{img.height}, too small to be a real screenshot{small_hint(key, item)}")
                 return False
             low, high = img.convert("L").getextrema()
             if low == high:
@@ -99,6 +145,7 @@ def check_image(path, report):
     except ImportError:
         pass
     except Exception as err:  # unreadable image
+        report.bad_files.append(path)
         report.fail(f"{path.name} cannot be opened: {err}")
         return False
     return True
@@ -150,18 +197,20 @@ def gate_before(args):
     before = evidence_dir(args) / "before"
     if not steps:
         report.fail("the repro file has no numbered step rows with a proof file name in the last column")
+    items = steps_by_file(args)
     for name in steps:
         target = before / name
         if not target.exists():
             report.fail(f"before/{name} is missing")
-        elif target.suffix.lower() in IMAGE_EXT and check_image(target, report):
+        elif target.suffix.lower() in IMAGE_EXT and check_image(target, report, args.key, items.get(target.stem)):
             report.ok(f"before/{name}")
     if result == "yes" and not logs_in(before):
         report.fail("before/ has no log file (.txt or .log) for the failing action")
     elif result == "yes":
         report.ok(f"{len(logs_in(before))} log file(s) in before/")
     for problem in load_pair().problems_before(pair_args(args, "before")):
-        report.fail(problem)
+        report.pair_problem(problem)
+    show_shots(args, "before")
     return report.finish("before gate")
 
 
@@ -181,12 +230,13 @@ def gate_after(args):
     print("-- the after side")
     before, after = evidence_dir(args) / "before", evidence_dir(args) / "after"
     allowed = set(args.allow_identical or [])
+    items = steps_by_file(args)
     for shot in images_in(before):
-        twin = next((after / (shot.stem + ext) for ext in IMAGE_EXT if (after / (shot.stem + ext)).exists()), None)
+        twin = load_pair().find_image(after, shot.stem)
         if twin is None:
             report.fail(f"after/{shot.stem}.* is missing. Take it with the same steps and the same file name")
             continue
-        if not check_image(twin, report):
+        if not check_image(twin, report, args.key, items.get(twin.stem)):
             continue
         if digest(shot) == digest(twin) and shot.name not in allowed:
             report.fail(f"after/{shot.name} is identical to the before image, so it proves nothing. Check the fix is running, or pass --allow-identical {shot.name}")
@@ -195,18 +245,35 @@ def gate_after(args):
     if not logs_in(after):
         report.fail("after/ has no log file (.txt or .log) for the same action")
     for problem in load_pair().problems_after(pair_args(args)):
-        report.fail(problem)
+        report.pair_problem(problem)
+    show_shots(args, "after")
     return report.finish("after gate")
 
 
+def show_shots(args, stage):
+    """Prints the table of one set's shots, so a reviewer sees at once which shots change nothing."""
+    lines = load_pair().shot_table(pair_args(args, stage), stage)
+    if lines:
+        print()
+        print("\n".join(lines))
+
+
+_pair = None
+
+
 def load_pair():
-    """Load pair.py, which sits next to this script in tools/."""
+    """Load pair.py, which sits next to this script in tools/. Loaded once, so every check in
+    one gate run shares pair.py's image cache."""
+    global _pair
+    if _pair is not None:
+        return _pair
     for base in (Path(__file__), Path(__file__).resolve()):
         path = base.with_name("pair.py")
         if path.exists():
             spec = importlib.util.spec_from_file_location("pair", path)
             module = importlib.util.module_from_spec(spec)
             spec.loader.exec_module(module)
+            _pair = module
             return module
     sys.exit("pair.py is missing next to proof.py in tools/")
 

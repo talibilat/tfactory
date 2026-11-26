@@ -7,6 +7,8 @@ Be strict and vigilant. Do only what this skill says, in its order, and never st
 
 # lane
 
+Typed alone for a ticket, this skill joins the ticket's run, as "One run per ticket" in `~/.agents/skills/blueprint/references/conventions.md` says. After every step, update the board row of the stage the run is in and post the board. Called by another skill, it leaves the board and the chat title to the caller.
+
 For projects other than Aruva, follow [Compose lanes](references/compose.md). Start with `lane compose up <name>` from the worktree. Save proof where the calling skill expects it and run `lane compose down <name>` when done. The rest of this skill applies only to Aruva.
 
 A **lane** is one agent's private Aruva: its own database, Redis, Qdrant, Neo4j, backend, AI service and frontend, on its own ports. The heavy stateless services (document parser, content extractor, PII masking) are shared from the always-on base stack. Many agents can hold a lane at once without touching each other's data, ports or containers.
@@ -63,13 +65,13 @@ Leave out `--key` when the task has no key. Tick each item when its Done conditi
 
    | Change | How | Proof |
    |---|---|---|
-   | Visible in the UI | `lane shot N <path> <file.png> --as <email>` for one page. For a journey, write a script with `~/.agents/tools/lane/browser.mjs` (`openLane`, `goto`) or run a ready flow: `lane flow N foundation --pdf <file>` | Numbered screenshots |
+   | Visible in the UI | `lane shot N <path> <file.png> --as <email>` for one page. For a journey, write a script with `~/.agents/tools/lane/browser.mjs` (`openLane`, `goto`) or run a ready flow: `lane flow N foundation --pdf <file>` | Numbered screenshots named `NN-<what-happens>.png`, each with a purpose |
    | API | `TOKEN=$(lane login N <email>)` then `curl -H "authorization: Bearer $TOKEN" <api url>/...` | Request, status and body saved as `.txt` |
    | Worker, data or logs | `lane logs N api`, `lane exec N exec -T postgres psql -U postgres -d uok -c '...'` | The output saved as `.txt` |
 
    Flows: `foundation` (course, Course Foundation, upload, extraction, review, validate, approve, create the Smart Syllabus) is verified end to end. `generate` (upload a book asset to that syllabus, parse, Full AI Gen, publish) is verified up to the parse; generation needs a valid Gemini key, see troubleshooting.
 
-   A flow writes `steps.log` and numbered screenshots. A `FINDING` line is a real product result on that PDF (for example a blocking validation issue), not a tool failure: report it. The flow waives a blocking issue once and stops if validation still blocks, because rejecting candidates needs a person. Resume a run with `--course <id> --from <step>`.
+   A flow writes `steps.log` and numbered screenshots. Each screenshot has a `SHOT NN-<name>.png: <purpose>` line, which says what it shows and why it is here. Use that purpose as the step's "looking at" line with `pair.py item <KEY> N --looking-at "<purpose>"`. The repro file has no "looking at" column. `pair.py init` starts the line from the row's Action, and `item` replaces it. A `SAME NN-<name>.png not saved` line means the step changed nothing on screen, so the flow kept no new picture. If "nothing changes" is the bug, copy the earlier shot under the step's name and record why with `pair.py item <KEY> N --allow-duplicate "<why>"`. Copy into `before/` or `after/` only the shots a repro step needs, never the whole flow folder. Rename each copied shot to its repro step's number and the file name in the repro row. For example, the flow's `07-validate-blocked.png` becomes `03-validate-blocked.png` when it proves repro step 3. The gates fail a shot whose number is not its step's. A new flow step passes its purpose to `step(name, purpose, fn)`, and its shots go through `proofShots` in `browser.mjs`. A `FINDING` line is a real product result on that PDF (for example a blocking validation issue), not a tool failure: report it. The flow waives a blocking issue once and stops if validation still blocks, because rejecting candidates needs a person. Resume a run with `--course <id> --from <step>`.
 
    Accounts and seeded courses are in `references/accounts.md`. After you change code, or after `sync-dev.sh` moves a worktree, run `lane rebuild N be|ai|fe` and test again.
    Done when every step of the ticket's live test has a result and a proof file.
@@ -79,6 +81,20 @@ Leave out `--key` when the task has no key. Tick each item when its Done conditi
 
 5. **Give the lane back, every time.** Close every browser window and tab you opened. Run `lane down N` as soon as testing ends, also after a failure, a block or a stop. It deletes the lane's containers, data, volumes and built images, and copies anything under the lane's `proof/` folder to `<LANES_HOME>/proofs/`. When the last lane closes it also removes unused image layers and build cache older than 7 days. `lane down --owner "<your owner text>"` closes every lane you opened.
    Done when `lane ls` no longer shows lane N, and `lane queue` shows nothing of yours.
+
+   **Final sweep, every time.** After your last lane is down, run these three commands and show the output:
+
+   ```
+   lane ls
+   docker compose ls
+   docker ps --format '{{.Names}}\t{{.Status}}'
+   ```
+
+   1. Any lane you opened must be gone. Close it now if it is not.
+   2. Any container, test stack or one-off `docker run` you started yourself (a `docker compose up`, a `docker run`, a build helper) must be stopped and removed with `docker compose -p <name> down` or `docker rm -f <name>`. Check the names against what you started. Never guess.
+   3. Leave everything else running: other chats' lanes, the base stack (`qa-dev`) and the user's own dev stacks (`uok-be`, `uok-fe`, `uok-ai`). Many of them are the user's work in progress, and a lane's shared services come from the base stack. If any of those are still running, add one line to your reply: "Still running: <stack names>, about <N> GB. Say 'stop them' and I will run `docker compose -p <name> down` for each." Stop them only after the user says so. `down` keeps their data volumes. Never add `-v`.
+
+   Done when the three outputs show no lane or container of yours, and the user has seen the "Still running" line when there is one.
 
    Close the lane without waiting to be asked when: the after proof is saved and the proof gate passes, the PR is opened (babysit never needs the lane, and a fix that needs a retest gets a fresh `lane up`), the ticket is blocked or snoozed, the chat ends, or a test run fails and you stop. Before you end your turn, run `lane ls` and confirm none of your lanes is left. Never close a lane another chat owns, even if it looks idle.
 
@@ -98,7 +114,8 @@ Leave out `--key` when the task has no key. Tick each item when its Done conditi
 3. **Never run a heavy job beside a lane build, or beside another heavy job.** Run lint, type checks, test suites and builds on the Mac as `lane heavy -- <command>`. It queues them one at a time, waits until the Mac has 25% memory free and caps Node's memory at 3 GB. For example: `lane heavy --label ARPP-4268 -- npm run lint:ci`. Lint only the files you changed when the tool allows it. A whole-repo `eslint` run took 5.9 GB per process, twice at once, in the incident that started this.
 4. **The caps are the limit.** Every container in a lane has a memory cap (backend 2 GB, AI service 1.5 GB, frontend 1 GB, Neo4j 1 GB, Postgres and Qdrant 512 MB, Redis 128 MB). If a container is killed (`docker ps -a` shows exit code 137), do not raise the cap. Report it with the service name and what you were doing.
 5. **Close at once.** Close the lane the moment the last test result and proof file are saved. Then run `lane ls` and `lane queue` and confirm nothing of yours is left. This holds on success, failure, block and stop.
-6. **Docker's size is the user's decision.** If `lane doctor` warns, tell the user. Never edit Docker Desktop's settings or restart Docker.
+6. **Use fewer copies of the heavy services.** When you start a stack that is not a lane (a plain `docker compose up` for the main repos), set `DOC_PARSER_REPLICAS=1` and `CONTENT_EXTRACTOR_REPLICAS=1` first. The defaults are 6 and 4, and each doc-parser copy holds about 0.7 GB while idle.
+7. **Docker's size is the user's decision.** If `lane doctor` warns, tell the user. Never edit Docker Desktop's settings or restart Docker.
 
 ## Test books
 
@@ -119,7 +136,7 @@ The `proof` skill builds the before and after pictures (see `proof` for the tool
 No PR, no Jira comment, no Jira attachment and no ticket move until the before and after screenshots exist, are real, and show the fix. "Real" means:
 
 1. Every step has a `before/` and an `after/` screenshot of the live app (UI whenever the bug shows in the UI). Logs, transcripts and text are extra, never a replacement.
-2. `proof.py gate before` and `gate after` both print PASS. The gate fully decodes each image, rejects blank, tiny or corrupt files and files that are not PNG, JPEG or WebP.
+2. `proof.py gate before` and `gate after` both print PASS. The gate fully decodes each image, rejects blank, tiny or corrupt files and files that are not PNG, JPEG or WebP. It also rejects a shot that proves nothing: a generic purpose, a name that is not `NN-<what-happens>.png`, or the same picture as another step. See "Every shot must prove something" in the `proof` skill.
 3. Open every image yourself (Read it) and check it shows the right screen, the bug on the before side, and the fixed behavior on the after side. A page that only shows a login, an error page, a blank screen or the wrong course is not proof. Retake it.
 4. After you upload to GitHub or Jira, download or open the uploaded image and check it renders. A broken image link or a corrupted upload counts as not published. Fix it, then re-check.
 5. If you cannot produce the screenshots (lane will not start, key invalid, blocked), stop and tell the user why. Do not open the PR or comment on Jira without them. Only the user can waive this, by saying "skip proof" in the call.

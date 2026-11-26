@@ -17,13 +17,15 @@ Start the round's reviewers together with `delegate_task`, role `review`, at the
 
 Target: Cursor `auto-smart` on `cost` first. On a Cursor error or limit, run that reviewer again on Sonnet medium. See the conventions file.
 
-Brief for every reviewer, with paths and no pasted text:
+Brief for every reviewer, with paths and no pasted text. It starts with the agent-brief preamble from `~/.agents/skills/blueprint/references/agent-brief.md` (role: senior staff reviewer):
 
 ```
+<the agent-brief preamble>
 Review the change in <worktree path> against origin/<default branch>. Ticket: <path>. Plan: <path>. Decision log: <path>. Requirements and knowledge: <~/.agents/ticket-knowledge/<EPIC>.md>. Judge the change against the original requirements, not only the ticket.
 Read <the reviewer's SKILL.md path, found as above> and follow it, with these overrides:
 - Review only. Do not edit, stage, commit or push anything.
 - Do not rename the chat. Do not ask the user questions.
+- When you start, mark your row on the shared progress board: python3 -I ~/.agents/tools/progress.py set <KEY> inspect-<interrogate|postwork|ponytail|thermo> 1 3 --dir <absolute path to .scratch>. Touch no other row. If the command fails, say so in your reply and go on with the review.
 - Do not start sub-agents. Read only the diff, the plan and the files the diff touches.
 - Write your findings to <.scratch/<KEY>-reviews/<name>-r<N>.md> in this exact format, one row per finding:
   F<n> | Critical/High/Medium/Low | file:line | in-scope yes/no | claim | proof (command and output, or the exact lines) | smallest fix
@@ -76,9 +78,10 @@ The gate in `inspect` does not pass while an edge case is waiting for an answer.
 
 Start it only when the four code reviewers have no verified in-scope findings, postwork says PASS, and the live run passed on the current commit.
 
-Start one `delegate_task` child (role `review`, Claude Sonnet medium). Do not send it to Cursor: it runs the app and creates test data. Brief, with paths and no pasted text:
+Start one `delegate_task` child (role `review`, Claude Sonnet medium). Do not send it to Cursor: it runs the app and creates test data. Brief, with paths and no pasted text, starting with the agent-brief preamble (role: senior QA engineer):
 
 ```
+<the agent-brief preamble>
 Run the QA validation of the inspect skill in pipeline mode for <KEY>. Read ~/.agents/skills/inspect/SKILL.md and follow its sections 2 to 5 and its pipeline mode limits. Do not start the code reviewers or any other sub-agent.
 Worktree: <path>. Ticket: <path>. Plan and its checklist: <path>. Decision log: <path>. Repro steps: <path>. Live run: <path>. Evidence folder: <path>.
 Replay any repro step whose after proof is missing for this commit. Tick "verified" on each checklist line you proved, and list the lines you could not prove.
@@ -102,7 +105,7 @@ Show a short plan in chat before touching code:
 | Finding | Fix | Files | Owner subpart |
 |---|---|---|---|
 
-`ship` starts a fresh builder per independent group of findings (Sonnet medium). The brief is the finding rows plus the worktree path. Then it runs its steps 2 and 3 again (re-check the bug, baseline and scope), commits the fixes as `<KEY>: <what changed>`, and calls `inspect` for the next round, which starts with a fresh live run on the new commit.
+`ship` starts a fresh builder per independent group of findings (Sonnet medium). The brief is the agent-brief preamble, then the finding rows and the worktree path. Then it runs its steps 2 and 3 again (re-check the bug, baseline and scope), commits the fixes as `<KEY>: <what changed>`, and calls `inspect` for the next round, which starts with a fresh live run on the new commit.
 
 ## Round limits
 

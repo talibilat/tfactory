@@ -15,10 +15,10 @@ Never test against production. Shared or staging systems need the user's OK firs
 
 ## Steps
 
-1. Start with `.scratch/<KEY>-repro.md`. Replay its steps exactly as the before proof was taken: same place, same account, same data, same method (visible Chrome on the lane). Save each step's proof into `.scratch/<KEY>-evidence/after/` under the same file name as in `before/`, then call the `proof` skill in `after` mode (`proof after <KEY>`), which circles the changes and checks each step against what was asked, and run `python3 -I ~/.agents/tools/proof.py gate after <KEY>`. It must print PASS.
+1. Start with `.scratch/<KEY>-repro.md`. Replay its steps exactly as the before proof was taken: same place, same account, same data, same method (visible Chrome on the lane). Save each step's proof into `.scratch/<KEY>-evidence/after/` under the same file name as in `before/`, then call the `proof` skill in `after` mode (`proof after <KEY>`), which circles the changes and checks each step against what was asked, and run `python3 -I ~/.agents/tools/proof.py gate after <KEY>`. It must print PASS. Read the shot table it prints: a row that says SAME, or a change away from the ticket's area, is a shot that proves nothing.
 2. Then run the plan's Live test section: the other numbered steps, each with its action and expected result. If it is thin, write it now. Always include one nearby flow that must still work.
 3. Sync every repo with dev first (`~/.agents/tools/lane/sync-dev.sh <worktree> ...`). If a worktree moved, rebuild and run the baseline again. Run on the final commit. Record `git -C <wt> rev-parse HEAD`. Start services in the background. Stop them afterward and check that the ports are free.
-4. Compare each step with its expected result. Take a screenshot or save the output for each step. Save the logs for the changed action: backend and AI logs, the browser console and the network request.
+4. Compare each step with its expected result. Take a screenshot or save the output for each step, with a one-line purpose: what it shows and why it is here. Save the logs for the changed action: backend and AI logs, the browser console and the network request.
 5. Write `.scratch/<KEY>-live-test.md`:
 
    ```
@@ -60,7 +60,8 @@ Proof that the change works locally is required for every task. The folder layou
 
 Rules:
 
-- Name files `<step>-<what>.png` or `.txt`. Each image under 1 MB.
+- Take a shot only when it proves something. Each one shows what changed since the previous shot of the same flow (a new page, a state change, an error appearing, a value changing). Never take a second shot of an unchanged screen. When the change is a small region, crop or zoom to it and say so in the shot's purpose. A crop under 600x300 pixels passes the gate only with a reason recorded by `pair.py item <KEY> N --allow-small "<why>"`. The full rule is "Every shot must prove something" in the `proof` skill, and `proof.py gate` enforces it.
+- Name files `NN-<what-happens>.png` or `.txt`, where `NN` is the step number, for example `03-save-button-after-empty-course.png`. Each image under 1 MB.
 - Remove secrets, tokens, emails and personal data before saving. Crop or redact.
 - Proof must show the real changed behavior on the final commit. Unit test output does not count.
 - If a proof tool is missing, install it outside the repo and carry on. Examples: `npx playwright install chromium` for a browser, `brew install httpie` for HTTP calls. `screencapture -x` is built into macOS. Never add a tool to the repo's dependencies or lockfile. Tell the user in one line what you installed.

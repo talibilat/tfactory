@@ -166,9 +166,19 @@ def test_a_failed_baseline_does_not_rewrite_metrics(tmp_path):
 
 def test_worker_count_follows_sites_cores_and_the_requested_cap():
     cores = os.cpu_count() or 1
-    assert worker_count(10, None) == min(10, cores)
+    assert worker_count(10, None) == min(10, cores, 4)
     assert worker_count(10, 3) == min(3, cores)
     assert worker_count(2, 8) == min(2, cores)
+
+
+def test_worker_limit_follows_the_environment(monkeypatch):
+    cores = os.cpu_count() or 1
+    monkeypatch.setenv("MUTATOR_MAX_WORKERS", "2")
+    assert worker_count(10, None) == min(2, cores)
+    monkeypatch.setenv("MUTATOR_MAX_WORKERS", "nonsense")
+    assert worker_count(10, None) == min(10, cores, 4)
+    monkeypatch.setenv("MUTATOR_MAX_WORKERS", "0")
+    assert worker_count(10, None) == min(10, cores, 4)
 
 
 def test_workers_keep_a_private_copy_and_link_the_rest(tmp_path):

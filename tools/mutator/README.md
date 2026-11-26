@@ -35,7 +35,7 @@ Exit `0` when every executed mutant was killed. Exit `2` when the baseline tests
 
 ## Workers
 
-Mutants of one file run at the same time. The default is one worker per core. `--max-workers` sets the cap. The run uses the smaller of that cap, the number of cores, and the number of selected sites. Files are still taken one at a time.
+Mutants of one file run at the same time. The default cap is 4 workers, because each worker runs its own copy of the project's tests and a large project can take several GB per copy. `MUTATOR_MAX_WORKERS` changes the default, and `--max-workers` overrides both. The run uses the smaller of that cap, the number of cores, and the number of selected sites. Files are still taken one at a time.
 
 Each worker is a directory under `target/mutation-workers`. The file being mutated is a private copy. A module that reaches that file through a relative import is copied too, so Node resolves the import to the private copy. The rest of the tree is linked. The original files stay as they are. The overlay is removed when that file's mutants finish.
 
@@ -103,7 +103,7 @@ Tokens inside strings, comments, and quoted Clojure forms are left alone. A repl
 
 ## Tests and coverage
 
-The baseline command has to pass before any mutant runs. A mutant's timeout is ten times that baseline, and at least two seconds. `--timeout-factor` changes the multiple. `--test-command` replaces the default. Defaults:
+The baseline command has to pass before any mutant runs. A mutant's timeout is ten times that baseline, and at least two seconds. `--timeout-factor` changes the multiple. `--test-command` replaces the default. Set `MUTATOR_RELATED_TESTS=1` to make Python runs execute only the test files that import the mutated module, instead of the whole suite. It is much faster, but a mutant that only a test elsewhere would catch survives, so use it for quick local checks. When no test imports the module, the whole suite runs. Defaults:
 
 | Language | Command | Where |
 | --- | --- | --- |

@@ -73,11 +73,32 @@ CONFIGS = (
 )
 
 
+DEFAULT_MAX_WORKERS = 4
+
+
+def default_worker_limit() -> int:
+    """The cap when --max-workers is absent: MUTATOR_MAX_WORKERS, else 4.
+
+    Every worker runs a full copy of the project's tests. On a large project
+    one copy can take several GB, so one worker per core can fill the machine.
+    """
+
+    raw = os.environ.get("MUTATOR_MAX_WORKERS", "")
+    try:
+        value = int(raw)
+    except ValueError:
+        return DEFAULT_MAX_WORKERS
+    return value if value >= 1 else DEFAULT_MAX_WORKERS
+
+
 def worker_count(site_count: int, requested: int | None) -> int:
-    """The smaller of the sites, the cores, and an explicit --max-workers."""
+    """The smaller of the sites, the cores, and the worker cap.
+
+    The cap is --max-workers, or default_worker_limit() when it is absent.
+    """
 
     processors = os.cpu_count() or 1
-    limit = processors if requested is None else requested
+    limit = default_worker_limit() if requested is None else requested
     return max(1, min(site_count, processors, limit))
 
 

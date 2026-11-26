@@ -3,7 +3,8 @@
 
 One JSON file per task: <dir>/<KEY>-progress.json. The skills call `set` when a
 step finishes, `now` when they start a piece of work, and `show` to print the
-update they post in chat.
+update they post in chat after every step. Parallel agents may update the same
+board: each command holds a lock on it while it reads and writes.
 
   progress.py init  <KEY> [--dir .scratch]
   progress.py set   <KEY> <stage> <done> <total> [--note TEXT]
@@ -15,14 +16,18 @@ update they post in chat.
   progress.py every <KEY> <minutes|default>   the user asked for another interval
   progress.py list                   one line per task found in the folder
 
-Update schedule, by the local clock, unless `every` set another interval:
+Extra updates during a long step, by the local clock, unless `every` set another interval:
   07:00 to 18:00   every 10 minutes
   18:00 to 00:00   every 60 minutes
   00:00 to 07:00   no updates (the work continues)
 """
 import argparse
+import contextlib
+import fcntl
 import importlib.util
 import json
+import os
+import re
 import sys
 import time
 from pathlib import Path
@@ -32,6 +37,8 @@ STAGES = [
     ("blueprint", "blueprint: plan", 9),
     ("repro", "before proof (bug, feature or QA steps)", 6),
     ("ship-build", "ship: build", 4),
+    ("crap", "ship: gate 1 crapper", 2),
+    ("mutation", "ship: gate 2 mutator", 2),
     ("inspect-interrogate", "inspect: reviewer interrogate", 3),
     ("inspect-postwork", "inspect: reviewer postwork", 3),
     ("inspect-ponytail", "inspect: reviewer ponytail-review", 3),
@@ -42,6 +49,8 @@ STAGES = [
     ("ship-merge", "babysit: watch until merged", 2),
 ]
 IDS = [s[0] for s in STAGES]
+LABELS = {sid: label for sid, label, _ in STAGES}
+KEY_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]*\Z")  # the same pattern as KEY_RE in flow.py
 DAY_START, EVENING_START = 7 * 60, 18 * 60  # minutes after midnight
 DAY_MINUTES, EVENING_MINUTES = 10, 60
 
@@ -50,17 +59,51 @@ def path_for(args):
     return Path(args.dir) / f"{args.key}-progress.json"
 
 
+def new_stage(total):
+    return {"done": 0, "total": total, "skipped": False, "note": ""}
+
+
+def upgrade(data):
+    """Give a board made before a stage existed that stage's row, in table order.
+
+    A new row starts at 0 done, so an old board never shows a gate as passed that it never recorded.
+    The ids of the rows added are kept in "added_stages", so `show` can say so.
+    """
+    old = data["stages"]
+    added = [sid for sid in IDS if not old.get(sid)]
+    data["stages"] = {sid: old.get(sid) or new_stage(total) for sid, _, total in STAGES}
+    if added:
+        data["added_stages"] = [sid for sid in IDS if sid in added or sid in data.get("added_stages", [])]
+    return data
+
+
+def no_board(args):
+    return f"no progress file at {path_for(args)}. Run: progress.py init {args.key} --dir {args.dir}"
+
+
 def load(args):
     p = path_for(args)
     if not p.exists():
-        sys.exit(f"no progress file at {p}. Run: progress.py init {args.key} --dir {args.dir}")
-    return json.loads(p.read_text())
+        sys.exit(no_board(args))
+    return upgrade(json.loads(p.read_text()))
 
 
 def write(args, data):
+    """Write to a temporary file and rename it, so a reader never sees half a board."""
     p = path_for(args)
     p.parent.mkdir(parents=True, exist_ok=True)
-    p.write_text(json.dumps(data, indent=2) + "\n")
+    tmp = p.with_name(f".{p.name}.{os.getpid()}.tmp")
+    tmp.write_text(json.dumps(data, indent=2) + "\n")
+    os.replace(tmp, p)
+
+
+@contextlib.contextmanager
+def locked(args):
+    """Hold the board's lock while reading and writing, so parallel agents do not lose each other's updates."""
+    p = path_for(args)
+    with open(p.with_name(f".{p.name}.lock"), "w") as handle:
+        fcntl.flock(handle, fcntl.LOCK_EX)
+        yield
 
 
 def save(args, data):
@@ -77,7 +120,7 @@ def new_board(key):
         "every_minutes": None,
         "now": None,
         "log": [],
-        "stages": {i: {"done": 0, "total": t, "skipped": False, "note": ""} for i, _, t in STAGES},
+        "stages": {i: new_stage(t) for i, _, t in STAGES},
     }
 
 
@@ -98,15 +141,19 @@ def stage_or_exit(name):
 
 # The order is enforced. A stage may advance only when the stages it needs are finished or skipped.
 # (stage, minimum steps of that stage that must already be done)
+# The two quality gates run in order after the build, and every inspect row waits for both
+# (ship/references/quality-gates.md). A gate the user skipped counts as finished here.
 INSPECT = ["inspect-interrogate", "inspect-postwork", "inspect-ponytail", "inspect-thermo", "inspect-qa"]
 NEEDS = {
     "repro": [("blueprint", 4)],  # reproduce is step 5 of blueprint
     "ship-build": [("blueprint", None), ("repro", None)],
+    "crap": [("ship-build", None)],
+    "mutation": [("ship-build", None), ("crap", None)],
     "lane-after": [(i, None) for i in INSPECT],
     "ship-close": [("lane-after", None)],
     "ship-merge": [("ship-close", None)],
 }
-NEEDS.update({i: [("ship-build", None)] for i in INSPECT})
+NEEDS.update({i: [("ship-build", None), ("crap", None), ("mutation", None)] for i in INSPECT})
 
 
 def blocker(data, stage, new_done):
@@ -252,10 +299,25 @@ def todo_lists(args):
     return "\n\n".join(out)
 
 
+def added_note(data):
+    """One line for an older board whose added rows have nothing recorded yet, or ''."""
+    waiting = [
+        LABELS[sid]
+        for sid in data.get("added_stages", [])
+        if sid in data["stages"] and data["stages"][sid]["done"] == 0 and not data["stages"][sid]["skipped"]
+    ]
+    if not waiting:
+        return ""
+    return (
+        f"\nNote: this board is older than the {' and '.join(waiting)} row(s). "
+        "They were added at 0 and nothing is recorded for them yet."
+    )
+
+
 def cmd_show(args):
     data = load(args)
     extra = todo_lists(args)
-    print(table(data) + story(data) + (("\n\n" + extra) if extra else ""))
+    print(table(data) + added_note(data) + story(data) + (("\n\n" + extra) if extra else ""))
     data["last_shown"] = time.time()
     write(args, data)
 
@@ -277,7 +339,7 @@ def cmd_list(args):
         print(f"no tasks in {args.dir}")
         return
     for f in files:
-        data = json.loads(f.read_text())
+        data = upgrade(json.loads(f.read_text()))
         live = [(sid, e) for sid, e in data["stages"].items() if not e["skipped"]]
         done_sum = sum(e["done"] for _, e in live)
         total_sum = sum(e["total"] for _, e in live)
@@ -319,7 +381,17 @@ def main():
     add("list", cmd_list, key=False)
 
     args = ap.parse_args()
-    args.fn(args)
+    if args.fn is cmd_list:
+        args.fn(args)
+        return
+    if not KEY_RE.match(args.key):
+        sys.exit(f"bad key {args.key!r}: use letters, digits, dot, dash and underscore")
+    if args.fn is cmd_init:
+        Path(args.dir).mkdir(parents=True, exist_ok=True)
+    elif not path_for(args).exists():
+        sys.exit(no_board(args))  # before the lock, so a missing board or a mistyped --dir leaves no file behind
+    with locked(args):
+        args.fn(args)
 
 
 if __name__ == "__main__":

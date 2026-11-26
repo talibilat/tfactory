@@ -11,7 +11,7 @@ Be strict and vigilant. Do only what this skill says, in its order, and never st
 
 One picture per step that a reviewer can read in ten seconds: the bug on the left, the fix on the right, every change circled and numbered, a line saying what is being looked at and what was asked, and a verdict. It is built in two halves at different times.
 
-Read `~/.agents/skills/blueprint/references/conventions.md` first (Proof is mandatory, Live environment, Evidence). The tool is `~/.agents/tools/pair.py`, called `pair.py` below, always run as `python3 -I`. Evidence lives in `.scratch/<KEY>-evidence/` (`before/`, `after/`, `compare/`) and the step list in `.scratch/<KEY>-proof.json`.
+Read `~/.agents/skills/blueprint/references/conventions.md` first (Proof is mandatory, Live environment, Evidence). This skill joins the ticket's run, as "One run per ticket" there says. After every step, record it with `progress.py now` and post the board. The caller sets its own row: `repro` for `reproduce` and `build-feature`, `inspect-qa` for `inspect`, `lane-after` for `ship` step 5. Rename the chat only when the stage changes, as "Chat titles" says. The tool is `~/.agents/tools/pair.py`, called `pair.py` below, always run as `python3 -I`. Evidence lives in `.scratch/<KEY>-evidence/` (`before/`, `after/`, `compare/`) and the step list in `.scratch/<KEY>-proof.json`.
 
 ## To-do list
 
@@ -49,10 +49,23 @@ For every step, take the picture where a person would look.
 
    This writes `NN-<what>.png` beside the text file. A step with a UI and a terminal side gets two steps.
 
+## Every shot must prove something
+
+Take a shot only when it proves something. Each shot has a one-line purpose: what it shows and why it is here. That line is the step's "looking at" (`pair.py item --looking-at`).
+
+- Each step shows what changed since the previous shot of the same flow: a new page, a state change, an error appearing, a value changing. No shots "just in case", and no second shot of an unchanged screen.
+- When the change is a small region, crop or zoom to it instead of taking the full page, and say so in the purpose, for example "Cart badge in the header after adding a course, cropped to the badge". Crop the before and the after the same way. The gates fail a picture under 600x300 pixels or 5,000 bytes as too small to be a real screenshot. Let a crop through with `pair.py item <KEY> N --allow-small "<why>"`. The reason counts only when the step's purpose says crop or zoom.
+- Each before and after pair must differ in the area the ticket is about.
+- Name each shot `NN-<what-happens>.png`, where `NN` is the step number, for example `03-save-button-after-empty-course.png`.
+
+`pair.py check` and both `proof.py` gates enforce this. They fail a step whose purpose is generic ("screenshot", "step 1", "page") or repeats another step's, a file name that is not `NN-<words>.png` with the step's own number, a shot that matches another step's shot in the same set (`before/` or `after/`) byte for byte or with no change `pair.py diff` can see, a picture in `before/` or `after/` that belongs to no step, and a picture that cannot be opened (that one is left out of the comparisons and the table). They also print a table per set: step, file, purpose, and what changed since the previous shot (the share of changed pixels, the changed grid cells and the box they sit in). Read it. A row that says SAME, or a tiny change away from the ticket's area, is a shot that proves nothing. `pair.py shots <KEY> --stage before|after` prints the same table while you capture. Without `--stage`, `shots` and `check` both look at the after set. A picture wider than 1800 pixels is compared at a larger size, so a changed digit in small text on a 4K screenshot still counts.
+
+Only a recorded reason lets a shot through: `pair.py item <KEY> N --allow-duplicate "<why>"` (for example when "nothing happens" is the bug), `--allow-generic "<why>"`, `--allow-name "<why>"`, `--allow-small "<why>"` for a crop, or `--allow-identical "<why>"` when the before and after of a step may look the same. The reason needs at least three words, and the table lists every one for the reviewer.
+
 ## Mode: before
 
-1. Run `pair.py init <KEY>`. It makes one step per numbered row of `<KEY>-repro.md`. The row's Action becomes "looking at" and its Expected column becomes "asked".
-2. Rewrite both for each step so a reviewer who has not read the ticket understands them, with `pair.py item <KEY> N --looking-at "<the screen or call, in one line>" --asked "<what the requirement says should happen, with its source>"`. The source is a BA quote or a ticket key, as in the decision log.
+1. Run `pair.py init <KEY>`. It makes one step per numbered row of `<KEY>-repro.md`. The row's Action becomes "looking at" and its Expected column becomes "asked". To rename a shot later, rename it in the repro file and in `before/` and `after/`, then run `pair.py init <KEY>` again. It takes the new file name and keeps the step's purpose, marks, verdict and reasons. `--force` starts over and drops all of them.
+2. Rewrite both for each step so a reviewer who has not read the ticket understands them. "Looking at" is the shot's purpose, as "Every shot must prove something" says. Use `pair.py item <KEY> N --looking-at "<what this shot shows and why it is here, in one line>" --asked "<what the requirement says should happen, with its source>"`. The source is a BA quote or a ticket key, as in the decision log.
 3. Capture the before picture for each step.
 4. Optionally circle the bug on the before side: `pair.py mark <KEY> N --box x,y,w,h --label "<what is wrong here>" --sides before`. Boxes use the 900 pixel wide view that `pair.py diff` prints, not the raw screenshot size.
 5. Run `pair.py render <KEY>`. Each picture now shows the before on the left and a grey "AFTER fills in when the fix is ready" panel on the right.
@@ -75,7 +88,7 @@ Done when `check --stage before` prints COMPLETE and every step has a left half 
    - Use `--type look` (blue) for something the reviewer should check even though it did not change, such as a nearby flow that must still work.
    - Every changed region must be marked. A change that is only noise (a clock, a random id) is declared with `pair.py ignore <KEY> N --box ... --reason "..."`.
    - To start a step's marks again, use `pair.py mark <KEY> N --clear`.
-5. **Match each step with what was asked.** Start one fresh, read-only sub-agent (Sonnet medium) so the judge is not the builder. Give it a short brief with these paths: `.scratch/<KEY>-proof.json`, the `before/`, `after/` and `compare/` images (it must open them), the plan checklist and the decision log. Ask for one line per step: `match` or `no-match`, and the reason. It must quote the requirement it checked and must not edit anything. Then look at each picture yourself. Record the result: `pair.py verdict <KEY> N match|no-match --note "<one line: why>"`.
+5. **Match each step with what was asked.** Start one fresh, read-only sub-agent (Sonnet medium) so the judge is not the builder. Its brief starts with the agent-brief preamble from `~/.agents/skills/blueprint/references/agent-brief.md` (role: senior QA engineer), then gives these paths: `.scratch/<KEY>-proof.json`, the `before/`, `after/` and `compare/` images (it must open them), the plan checklist and the decision log. Ask for one line per step: `match` or `no-match`, and the reason. It must quote the requirement it checked and must not edit anything. Then look at each picture yourself. Record the result: `pair.py verdict <KEY> N match|no-match --note "<one line: why>"`.
 6. Run `pair.py render <KEY>`, then open every picture in `compare/` and look at it. The circles must sit on the real change, the labels must be readable, and the left and right must show the same screen. If one is wrong, fix the mark (`--clear` and mark again) or retake the picture, then render again.
 7. Run `pair.py check <KEY>`.
 
@@ -91,5 +104,6 @@ Done when `check` prints `Proof: COMPLETE`.
 - Never fill the right half before the fix is running, and never reuse a before picture as an after picture.
 - Never mark a step `match` unless the picture shows what the requirement asks. When a requirement is unclear, say so and set the verdict to `no-match` with that reason, or ask the user.
 - Never circle a place that did not change as though it did. `look` marks are blue and say what to check.
+- Never keep a shot that proves nothing, and never record an `--allow-*` reason only to get past the check.
 - Never skip the proof. Only the user can, by saying "skip proof" in the call.
 - Never leave a browser window, tab or lane open. Run `lane down N` once the last picture is saved.

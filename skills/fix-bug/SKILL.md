@@ -11,7 +11,7 @@ Do only what this skill says, in its order, and never step outside the system (s
 
 The track for a bug: something that worked, or should work, and does not. **A bug is never planned before it has been reproduced.**
 
-First read `~/.agents/skills/blueprint/references/conventions.md`. The user's message outranks everything here (see "Your message comes first" in that file). Words the user adds to the call: `plan only` or `just blueprint` stops after step 4, `build only` stops after the build, `agents N` or `no agents` sets the agent plan, `model <name>` sets the agents' model, `skip proof` waives the proof (only the user can say it).
+First read `~/.agents/skills/blueprint/references/conventions.md`. The user's message outranks everything here (see "Your message comes first" in that file). This track joins the ticket's run, as "One run per ticket" in that file says. Called again, it resumes from what is already verified instead of starting over. Words the user adds to the call: `plan only` or `just blueprint` stops after step 4, `build only` stops after the build and its quality gates (each a finished narrower request, not a waiver), `agents N` or `no agents` sets the agent plan, `model <name>` sets the agents' model, `skip proof` waives the proof (only the user can say it).
 
 ## To-do list
 
@@ -29,6 +29,8 @@ Read `~/.agents/skills/agents-first/SKILL.md` and ask its one question, once, fo
 - **Cause unclear after reproduce:** 3 to 5 sub-agents, one theory each, each told to disprove the others' theories. When agent teams are on (`CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1`), offer an agent team for this instead, as `agents-teams` says.
 - **Build:** one Sonnet builder per subpart, each in its own slice worktree (ship step 1).
 - **Check:** the four `inspect` reviewers and the live run, at once.
+
+Start every agent brief with the preamble in `~/.agents/skills/blueprint/references/agent-brief.md`, with the role filled in.
 
 Skip the question under `full-send`, or when the call already sets the agent count. Then use the recommended plan and say so in one line.
 
@@ -60,7 +62,7 @@ On `no` or `already fixed`, `reproduce` has already tried 3 rounds to clear the 
 
 1. Post the short "Could not reproduce" report from `reproduce` step 4: what was tried, what blocks it, and how to resolve it.
 2. Offer a draft Jira comment for the reporter. Post it only after the user says yes.
-3. Show the "Could not reproduce" card from `blueprint/references/cards.md`, write `pause`, and wait. The claim and the worktrees stay.
+3. Show the "Could not reproduce" card from `blueprint/references/cards.md`, rename the chat to `Needs you <KEY>`, write `pause`, and wait. The claim and the worktrees stay.
 4. When the user brings the missing detail, run `reproduce` again from its step 1.
 
 Only the user can lift this gate, by saying so in the call ("plan without reproducing it"). Note in one line that the rule was set aside, and mark the plan "not reproduced" at the top.

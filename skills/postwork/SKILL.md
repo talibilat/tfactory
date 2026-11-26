@@ -37,7 +37,7 @@ Read `references/matt-code-review.md` in full for every review. It holds Matt Po
 
 Identify and validate the comparison point and spec using Matt's process. If the user gives neither, use the ticket and branch comparison below first, and ask only if those do not establish them. Include committed, staged, unstaged and relevant untracked changes. State exactly what was reviewed. If no spec exists or no comparison can be established, disclose the limitation and do not claim a full pass.
 
-Run the Standards and Spec reviews in parallel fresh-context subagents when available and authorized, following Matt's prompts and including the complete smell baseline. If delegation is unavailable or prohibited, do both independent passes yourself and disclose the limitation. Do not require unrelated tracker setup when the ticket or spec is already available.
+Run the Standards and Spec reviews in parallel fresh-context subagents when available and authorized, following Matt's prompts and including the complete smell baseline. Start each brief with the preamble in `~/.agents/skills/blueprint/references/agent-brief.md` (role: senior staff reviewer). If delegation is unavailable or prohibited, do both independent passes yourself and disclose the limitation. Do not require unrelated tracker setup when the ticket or spec is already available.
 
 Apply a strict gate: any proven material standards violation, missing or partial requirement, scope violation, safety flaw, regression, or missing or weakened required test fails the review, regardless of score. Unverified requirements, unavailable required tests, missing specs or incomplete coverage prevent PASS; report PASS WITH MANUAL CHECKS only when the remaining checks can be completed manually and identify them. Never invent findings, treat a smell alone as a hard violation, or claim safety without evidence. Existing project or user instructions take precedence.
 
@@ -162,7 +162,7 @@ For area B, check each rule from the threat model against each attacker who can 
 
 For area C, the attacker is a normal user on a bad day. Check each unusual case in the ticket, then empty, single, largest and broken inputs, wrong conditions, off by one, errors swallowed silently, two saves overwriting each other, and old callers broken.
 
-**Large changes.** When the change has two or more slices, or more than about 300 changed lines, and you can start subagents, give each slice its own subagent, so each search runs in a small, fresh context. Its prompt holds only the threat model, the slice (files, entry points, where the data ends up, rules to check), the moves table above, and this request: "Return each suspect with the attack that triggers it, the file and line, and the call chain from attacker input to the harm." Keep each prompt under a page. Run steps 5 and 7 yourself.
+**Large changes.** When the change has two or more slices, or more than about 300 changed lines, and you can start subagents, give each slice its own subagent, so each search runs in a small, fresh context. Its prompt starts with the preamble in `~/.agents/skills/blueprint/references/agent-brief.md` (role: senior security reviewer), then holds only the threat model, the slice (files, entry points, where the data ends up, rules to check), the moves table above, and this request: "Return each suspect with the attack that triggers it, the file and line, and the call chain from attacker input to the harm." Keep each prompt under a page. Run steps 5 and 7 yourself.
 
 ## Step 7. Prove each finding
 
@@ -177,7 +177,7 @@ A suspect is not a finding. Every scored finding needs an exact place (file and 
 
 Prefer running over tracing. Write proof tests outside the repo or in a throwaway worktree, quote their output under Evidence, and delete them after.
 
-Check each Critical or High finding a second time. If you can start subagents, give one the finding and the code and ask it to prove the finding wrong. Keep the finding only if that fails.
+Check each Critical or High finding a second time. If you can start subagents, give one the finding and the code and ask it to prove the finding wrong. Its brief starts with the preamble in `~/.agents/skills/blueprint/references/agent-brief.md` (role: senior staff reviewer). Keep the finding only if that fails.
 
 | Counts as a finding | Doesn't count |
 |---|---|

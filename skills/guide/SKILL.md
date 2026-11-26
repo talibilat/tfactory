@@ -25,7 +25,7 @@ It deletes itself when the last item is ticked. See "To-do lists" in the convent
 
 1. Read the chat above: the task, the last skill that ran, the last thing that finished or failed.
 2. Run `python3 -I ~/.agents/tools/progress.py list` from the chat's project folder, then `progress.py show <KEY>` for the task in this chat. With no board, look at which `.scratch/<KEY>-*` files exist and place the work in the table below.
-3. Answer in this order: the task in one line, the board table, the stage the work is in and what is blocking it, and the exact thing to type next.
+3. Answer in this order: the task in one line, the board table, the stage the work is in (the chat title's first word, see "Chat titles" in the conventions file) and what is blocking it, and the exact thing to type next. Typing any delivery skill again joins the same run and resumes from what is verified (see "One run per ticket").
 
 | What exists | The work is at | Type next |
 |---|---|---|
@@ -37,7 +37,8 @@ It deletes itself when the last item is ticked. See "To-do lists" in the convent
 | `-qa-return.md` verdict is `not deployed`, `new scope` or `not reproduced` | A QA return stopped on purpose, with a draft for you | Read the draft, say yes to post or create it, or give the missing detail |
 | `-repro.md` says `Reproduced: yes` or `not a bug` and `before/` proof, no `-plan.md` | Research and planning | The track skill with the key, to resume |
 | `-plan.md`, no build commits in the worktree | Planned, ready to build | `ship <KEY>` |
-| Build commits, no gate lines in the board | Built, gates not run | `ship <KEY>` (runs the crapper and mutator gates, then `inspect`) |
+| Build commits, the `crap` or `mutation` row not done on the board | Built, gates not run | `ship <KEY>` (runs the crapper and mutator gates, then `inspect`) |
+| `flow.py next <KEY> --root <root>` does not exit 0 | Blocked before inspection on purpose | Fix what it says is missing, or approve a waiver yourself as "Waivers" in `~/.agents/tools/flow-gate.md` says. An agent cannot approve it |
 | Build commits, no `-reviews.md` | Built, not checked | `ship <KEY>` (it calls `inspect`) |
 | `-reviews.md` below 100, or a live run FAIL | In the fix loop | `ship <KEY>` to run the next round |
 | Score 100 and QA Done, `after/` incomplete | After proof missing | `ship <KEY>` (step 5, with `lane`) |
@@ -68,14 +69,14 @@ Show this table, then one line on how the stages follow each other. The order an
 | `lane` | Whenever the app must run for real: before proof, live run, after proof. The other skills call it | `lane`, or let the pipeline call it | A private copy of Aruva per agent, UI screenshots, API transcripts and logs. Queues when memory is short, caps container memory, and closes every lane when testing ends |
 | `babysit` | A PR is open and must reach merge. `ship` calls it | `babysit <PR link>` | Failed checks fixed, every comment answered and resolved, the branch kept up to date, until merged |
 | `council` | A plan, a change or a decision deserves a second, third and fourth opinion | `council`, with the thing to review | Grok 4.7, Claude Opus 5.5 and GPT Sol at medium effort, scored out of 10, repeated until they agree |
-| `deep-spec` | A ticket needs a deep look and a rewritten spec before anyone builds it | `deep-spec PROJ-123`, plus any links with notes | Every ticket claim checked, work in flight found, security and bug review, grilling and a council, a spec where every line has a source. Jira changes only with your yes. Chat named `SPEC <KEY>` |
+| `deep-spec` | A ticket needs a deep look and a rewritten spec before anyone builds it | `deep-spec PROJ-123`, plus any links with notes. Add `spec only` to stop after the spec | Every ticket claim checked, work in flight found, security and bug review, grilling and a council, a spec where every line has a source. Jira changes only with your yes. Chat named `Spec <KEY>`. Then the run carries on into the build track (`fix-bug`, `build-feature` or `qa-return`) once the open questions are answered, unless you said `spec only` |
 | `modernize` | An old PR has fallen behind | `modernize <PR link>` | A verdict (MODERNIZE, REWORK or CLOSE) and a rebased branch when it should live |
 | `explain-jira` | Someone commented on a ticket and you want it explained | `explain-jira <Jira link>` | What the ticket is, what each person asks, what to do next. Chat named `JC <KEY>` |
 | `explain-pr` | A PR has review comments you want explained | `explain-pr <PR link>` | What the PR is for, what each reviewer asks and whether they are right, what to do next. Chat named `GC <KEY> #<PR>` |
 | `unslop` | Always on. Every reply, plan, commit, PR and Jira comment goes through it | Nothing to type | Plain, short writing |
 | `plain-talk` | When a ticket, a result or a skill needs explaining in everyday words | `plain-talk PROJ-123`, `plain-talk ship` | A short story with a real-life example |
 
-The flow: the track skill (`fix-bug`, `build-feature` or `qa-return`) agrees the agent plan, takes the before proof its own way, and runs the shared `blueprint` steps to plan. `fix-bug` and `qa-return` call `reproduce` on the way. `ship` builds and calls `inspect`, and the two loop until both are satisfied. `lane` runs the app for every live step. `ship` then opens the PR and updates Jira with the before and after proof, and `babysit` stays with the PR until it is merged. Updates (the progress table plus what was just fixed and why, in simple words) come every 10 minutes from 07:00 to 18:00, every hour until midnight, and not at all from midnight to 07:00, unless the user names another interval.
+The flow: the track skill (`fix-bug`, `build-feature` or `qa-return`) agrees the agent plan, takes the before proof its own way, and runs the shared `blueprint` steps to plan. `fix-bug` and `qa-return` call `reproduce` on the way. `ship` builds and calls `inspect`, and the two loop until both are satisfied. `lane` runs the app for every live step. `ship` then opens the PR and updates Jira with the before and after proof, and `babysit` stays with the PR until it is merged. Updates (the progress table plus what was just fixed and why, in simple words) come after every step. During a long step they also come every 10 minutes from 07:00 to 18:00, every hour until midnight, and not at all from midnight to 07:00, unless the user names another interval. The chat title shows the stage, such as `Building PROJ-123`.
 
 ## Which skill for this
 

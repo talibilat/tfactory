@@ -13,6 +13,8 @@ Stay with a PR until it is merged, with no failed checks and no warnings left. B
 
 Input: a PR link or number. Read `~/.agents/skills/blueprint/references/conventions.md` for the git identity, the Jira rules and the evidence rules.
 
+This skill joins the ticket's run, as "One run per ticket" in the conventions file says. After every step, update the `ship-merge` row and post the board. Rename the chat only when the stage changes, as "Chat titles" says: `Watching <KEY>` while the PR is open, `Done <KEY>` after the archive. Keep the task folder until every required PR is merged.
+
 ## To-do list
 
 Before the first step, make a temporary to-do list from this skill's steps:
@@ -93,13 +95,13 @@ The PR is good when CI passed, every warning is judged and fixed (or explained),
 
 - A new comment, a failed check, a new warning or a conflict: go back to the matching step.
 - Approved but not merged: wait. Never merge the PR yourself, unless the user asked for the merge in clear words and the repo's rules allow it. Right before such a merge, fetch and check that the branch is up to date and green.
-- `state` is MERGED: call `unwatch_pull_request`. When every PR of the task is merged, archive the task folder, then post the last Jira update and tell the user:
+- `state` is MERGED: call `unwatch_pull_request`. When every required PR of the task is merged ("Required PRs" in the conventions file says which PRs those are), archive the task folder, then post the last Jira update, rename the chat to `Done <KEY>` and tell the user:
 
   ```
   ~/.agents/tools/worktree.sh archive <root> <KEY> --merged --scratch .scratch
   ```
 
   It moves the whole `<root>/worktrees/<KEY>/` folder, every repo worktree inside it, to `<root>/archived-worktrees/<KEY>/`. It copies the task files (ticket, plan, reviews, evidence) into `scratch/` there and writes `archive.md` with each repo, branch, last commit and the command to move it back. It refuses while a worktree has uncommitted changes. Then show the list and ask the user. Give the archive path in the final message.
-- `state` is CLOSED without a merge: report it and ask what to do next.
+- `state` is CLOSED without a merge: keep the task folder, report it and ask what to do next.
 
 When you stop for any other reason (blocked or waiting on the user), call `unwatch_pull_request` first, so the chat shows it needs attention.

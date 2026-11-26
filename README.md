@@ -24,7 +24,7 @@ The idea and the layout of this repo come from
 | `lane` | "lane" | A private running copy of the app per agent, for screenshots, API calls and logs. `lane compose` works for any Docker Compose project. Aruva has its own profile. |
 | `hardening` | "harden the tests" | Runs mutation testing on the change and adds tests for every change the suite misses. `ship` uses it for Gate 2. |
 | `babysit` | "babysit" | Watches a PR through CI and review, fixes real findings, resolves every comment, stays until merged. |
-| `deep-spec` | "deep-spec PROJ-123" | Investigation only, no code. Checks the ticket's claims against the code, finds work already built or about to merge, reviews security and likely bugs, grills you and runs a council, then rewrites the spec. Posts to Jira only with your yes on the exact text. |
+| `deep-spec` | "deep-spec PROJ-123" | Investigates before anyone builds, and writes no code itself. Checks the ticket's claims against the code, finds work already built or about to merge, reviews security and likely bugs, grills you and runs a council, then rewrites the spec. Posts to Jira only with your yes on the exact text. Then carries on into the build track, unless you add "spec only". |
 | `council` | "council" | Gets a review from Grok, Claude Opus and GPT at medium effort, and loops until they agree. |
 | `modernize` | "modernize" | Rebases an old PR and decides if it should still exist. |
 | `explain-jira` | "explain-jira" + Jira link | Explains the ticket, what each person is asking, and what to do next. |
@@ -63,9 +63,13 @@ flowchart TD
   G1 -- over 6 --> CL[cleaner agent<br>fresh context, max 3 rounds]
   CL --> G1
   G1 -- pass --> G2{{Gate 2: mutator<br>flip operators, rerun tests}}
-  G2 -- survivor --> HD[hardener agent<br>fresh context, max 3 rounds]
+  G2 -- survivor or untested line --> HD[hardener agent<br>fresh context, max 3 rounds]
   HD --> G2
-  G2 -- all killed --> IN[inspect<br>4 reviewers + live run + QA]
+  G2 -- all killed --> FC{{flow check<br>flow.py next exits 0}}
+  FC -- block --> W[you decide<br>fix it, or sign a waiver]
+  W -- fix it --> FIX
+  W -- waiver signed --> FC
+  FC -- pass --> IN[inspect<br>4 reviewers + live run + QA]
   IN -- findings or live run fails --> FIX[fix round<br>max 5, then ask you]
   FIX --> BL
   IN -- weak test only --> HD
@@ -86,6 +90,7 @@ flowchart TD
 | Build | `ship` builders, one worktree each | A plan that is wrong. The builder stops and says so. |
 | Gate 1 | `crapper`, then a cleaner | 3 rounds without a pass, then a card to you |
 | Gate 2 | `mutator`, then a hardener | 3 rounds without a pass, then a card to you |
+| Flow check | `flow.py next <KEY> --root <root>`, before inspection | Any exit other than 0. Only you can approve a waiver |
 | Check | `inspect` | Score under 100, live run FAIL, or an unanswered edge case |
 | Close | `ship`, `babysit` | A proof that is NOT COMPLETE |
 
@@ -96,11 +101,13 @@ Two tools that give a pass or a fail, so no agent has to judge code quality by f
 | Tool | Question it answers | Pass | Fail |
 |---|---|---|---|
 | `crapper` | Which changed functions are too complex and too little tested? CRAP = CC² x (1 - coverage)³ + CC | exit 0 | exit 2 when the worst score is above the limit (6) |
-| `mutator` | Do the tests notice when a line changes? It flips `==` to `!=`, `+` to `-`, and so on, and reruns the tests | exit 0, every mutant killed | exit 3, a mutant survived. Exit 2 means the baseline tests fail |
+| `mutator` | Do the tests notice when a line changes? It flips `==` to `!=`, `+` to `-`, and so on, and reruns the tests | exit 0, every mutant killed and no untested (uncovered) line | exit 3, a mutant survived. Exit 0 with uncovered lines also needs tests or your waiver. Exit 2 means the baseline tests fail |
 
 The limit is 6, not the human-sized 4, because agents handle more branches per function than people do. Lower it for a repo with a written reason in the plan.
 
 A failing gate starts a short-lived agent with a fresh context and one job. A cleaner lowers the score. A hardener adds a test that kills the survivor. Each gate allows 3 rounds, then asks you. Full rules are in [skills/ship/references/quality-gates.md](skills/ship/references/quality-gates.md).
+
+Each gate has its own row on the progress board, `crap` and `mutation`, and the inspect rows cannot advance until both are done. The board only shows progress. After each baseline run, crapper run and mutator run, the agent saves the real counts with `flow.py record`. Before inspection starts, `python3 -I ~/.agents/tools/flow.py next <KEY> --root <root>` must exit 0. It reads those results for each changed repo's current commit, never the board. A block goes to you, and only you can approve a waiver. The agent makes the request with `python3 -I ~/.agents/tools/flow_approval.py new`, bound to the repo and commit, and you sign it with your own key using `ssh-keygen -Y sign`. It expires within 1 hour. Signing needs a one-time setup with sudo (see Install). Until you do it, a blocked gate cannot be waived. See [tools/flow-gate.md](tools/flow-gate.md) and [tools/flow-approval.md](tools/flow-approval.md). "full send" is never a waiver.
 
 ### Edge cases
 
@@ -305,11 +312,13 @@ Every skill stops and asks before these: a force-push or history rewrite, a data
 - Nothing passes without a live run. UI changes are proven with UI screenshots.
 - A bug is reproduced first, in Docker or a lane, in a visible Chrome window. If it will not reproduce, the agent works on the blocker for up to 3 rounds, then reports it and stops. No plan is made.
 - The before and after proof is mandatory. A script checks it at each stage, builds one annotated before and after picture per step (changes circled and numbered, what was asked written on it), and checks the images are on the Jira ticket and in every PR. Only you can skip it, by saying "skip proof".
-- You get updates in simple words: a progress table, what was just fixed and why, and what is being fixed now. Every 10 minutes by day, every hour in the evening, none overnight.
+- Every delivery skill joins the same run for a ticket. Type `inspect`, `ship` or any other one mid-way and it checks what is already verified, does its part and carries on to the end you asked for. "plan only", "spec only", "build only", "hardening only" and "just inspect" stop early as a finished request, not a waiver.
+- You get updates in simple words after every step: a progress table, what was just fixed and why, and what is being fixed now. During a long step, also every 10 minutes by day, every hour in the evening, none overnight.
+- Every agent the pipeline starts gets the same opening brief: a senior role, quality first, read before editing, test your own work, say what you could not verify. It is in [skills/blueprint/references/agent-brief.md](skills/blueprint/references/agent-brief.md).
 - One folder per task, `worktrees/ARPP-1234/fe`, `be` and `ai`, all made by `blueprint`, used by every later skill, and moved to `archived-worktrees/` by `babysit` once the PRs are merged.
 - Every skill keeps a temporary to-do list, ticks items with evidence, shows the table, what is left and the blockers in each update, and the list deletes itself when everything is ticked.
 - The system is strict. Skills follow their steps in order, and the progress board refuses to skip a stage.
-- The chat is named after the ticket: `PROJ-123` for the pipeline, `JC PROJ-123` for Jira comments, `GC PROJ-123 #45` for GitHub comments.
+- The chat title is the stage and the ticket, such as `Planning PROJ-123`, `Building PROJ-123` or `Watching PROJ-123`, and changes only when the stage does. `Needs you PROJ-123` means a decision waits on you, `Blocked PROJ-123` means infrastructure trouble. The full table is in "Chat titles" in [skills/blueprint/references/conventions.md](skills/blueprint/references/conventions.md). `explain-jira` uses `JC PROJ-123` and `explain-pr` uses `GC PROJ-123 #45`.
 
 ## Install
 
@@ -344,7 +353,35 @@ flowchart LR
 
 The skills are links, so a `git pull` updates every agent at once. Run `make install` again after a pull that changes `requirements.txt` or the bundled tools. An existing skill folder that is not a link to this checkout is left alone and reported.
 
-`make check` runs each tool once and fails if one is missing.
+`make check` runs each tool once and fails if one is missing. It also warns, without failing, when the waiver setup below is not done.
+
+### One-time waiver setup (needs sudo)
+
+A waiver lets one blocked quality gate through for one commit. The agent can only ask for one. You sign it with a key the agent cannot read, and the tool trusts only a public key that root installed. **Until you do this once, a blocked gate cannot be waived.** The agent has to fix what the gate found.
+
+1. Make a signing key somewhere the agent cannot read it (a hardware key with `-t ed25519-sk` is better):
+
+   ```bash
+   ssh-keygen -t ed25519 -f ~/approver_key -C tstack-approver
+   ```
+
+2. Write a file named `allowed_signers` with one line, your public key from `~/approver_key.pub`:
+
+   ```text
+   tstack-approver namespaces="tstack-flow" ssh-ed25519 AAAA...your-public-key...
+   ```
+
+3. Install it as root, then check that every folder on the path belongs to root:
+
+   ```bash
+   sudo install -d -o root -g wheel -m 755 /etc/tstack
+   sudo install -o root -g wheel -m 644 allowed_signers /etc/tstack/allowed_signers
+   ls -ld /etc /etc/tstack /etc/tstack/allowed_signers
+   ```
+
+   On Linux, use `-g root` in place of `-g wheel`.
+
+To sign a request, read the payload the agent shows, then run `ssh-keygen -Y sign -f ~/approver_key -n tstack-flow payload.txt` and paste the `.sig` back. The full steps and limits are in [tools/flow-approval.md](tools/flow-approval.md).
 
 ## Setup
 

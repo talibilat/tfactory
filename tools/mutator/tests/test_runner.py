@@ -153,3 +153,29 @@ def test_a_worker_overlay_is_imported_ahead_of_the_environment(tmp_path):
     result = CommandRunner().run(command, worker, 5)
     assert result.code == 0
     assert result.output.strip() == "worker"
+
+
+def test_related_tests_are_opt_in_and_limited_to_importers(tmp_path, monkeypatch):
+    project = tmp_path / "proj"
+    (project / "app" / "models").mkdir(parents=True)
+    (project / "tests").mkdir()
+    (project / "pytest.ini").write_text("[pytest]\n", encoding="utf-8")
+    source = project / "app" / "models" / "thing.py"
+    source.write_text("x = 1\n", encoding="utf-8")
+    (project / "tests" / "test_thing.py").write_text("from app.models.thing import x\n", encoding="utf-8")
+    (project / "tests" / "test_pkg.py").write_text("from app.models import thing\n", encoding="utf-8")
+    (project / "tests" / "test_other.py").write_text("import os\n", encoding="utf-8")
+
+    monkeypatch.delenv("MUTATOR_RELATED_TESTS", raising=False)
+    command, _ = plan_command(project, source, "python", None)
+    assert command[-1] == "pytest"
+
+    monkeypatch.setenv("MUTATOR_RELATED_TESTS", "1")
+    command, cwd = plan_command(project, source, "python", None)
+    assert command[-2:] == ["tests/test_pkg.py", "tests/test_thing.py"]
+    assert cwd == project.resolve()
+
+    other = project / "app" / "models" / "lonely.py"
+    other.write_text("y = 2\n", encoding="utf-8")
+    command, _ = plan_command(project, other, "python", None)
+    assert command[-1] == "pytest"

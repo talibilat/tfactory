@@ -23,6 +23,8 @@ Three tracks each have a skill that calls the steps below in order, and adds its
 
 First read `~/.agents/skills/blueprint/references/conventions.md`. It holds the pipeline order, Jira ids, repos, naming, the progress board, evidence folders, agent rules and the ask-first list. The user's message outranks everything here (see "Your message comes first" in that file). If you are not Claude Code inside T3, swap the tools as its "Using these skills from another agent" table says.
 
+This skill joins the ticket's run, as "One run per ticket" in the conventions file says. It finds what is already verified, does its part, then carries on. After every step, update the board and post it. Rename the chat only when the stage changes, as "Chat titles" says. Start every agent brief with the preamble in `references/agent-brief.md`.
+
 ## To-do list
 
 Before the first step, make a temporary to-do list from this skill's steps:
@@ -56,9 +58,9 @@ A Jira ticket means Jira mode. Anything else means standalone mode from the conv
 | Issue type Story or Task, or a request for new or changed behavior | `feature` |
 | None of these is clear | Ask one card: Bug, Feature or QA return |
 
-"just blueprint", "only blueprint" or "plan only" means stop after step 9. Any other call carries on into `ship` without asking.
+"just blueprint", "only blueprint" or "plan only" means stop after step 9, a finished narrower request. Any other call carries on into `ship` without asking.
 
-Start the progress board with `progress.py init <KEY>` (Progress board section of the conventions file). Update it at the end of every step, and post updates on the schedule in that section.
+Start the progress board with `progress.py init <KEY>`. It keeps a board that already exists. At the end of every step, update the `blueprint` row and post the board (Progress board section of the conventions file).
 
 Done when you can state the task in 2 lines and name its mode.
 
@@ -70,7 +72,7 @@ Do all three checks.
 2. Search T3 chats for the key with `t3_thread_search` and `t3_thread_list` (`titleContains`). Read each other chat that mentions it. If it is working on the ticket, tell the user and stop. If its state is unclear, send one question with `t3_thread_send` ("Are you working on <KEY>? Answer yes or no."), wait up to 5 minutes with `t3_thread_wait`, and count no answer as taken.
 3. Look for earlier work in every repo under the root folder in `setup.md`: branches named for the key, folders under `<root>/worktrees` and `<root>/archived-worktrees`, and `gh pr list -R <org>/<repo> --search "<KEY>" --state all`. An open PR or live branch owned by someone else counts as taken. A merged or closed PR, or an archive folder, is earlier work: note it for step 5.
 
-Then claim: write `claim` to the timeline, set the assignee to my accountId, move the ticket to "In Progress" by transition name, fetch it again to confirm, and rename the chat to the key and nothing else. If another chat claimed it a moment earlier, back out.
+Then claim: write `claim` to the timeline, set the assignee to my accountId, move the ticket to "In Progress" by transition name, fetch it again to confirm, and rename the chat to `Planning <KEY>` (Chat titles in the conventions file). If another chat claimed it a moment earlier, back out.
 
 Done when Jira shows me as assignee and In Progress, and the chat carries the key.
 
@@ -118,7 +120,7 @@ Done when the track's before step is done, or the track stopped the work with it
 
 ## 6. Research with sub-agents
 
-This is the most important step. Start every track below at once, one read-only sub-agent per track (Agents section of the conventions file). Each agent gets a short brief with paths, writes its findings to `.scratch/<KEY>-research/<track>.md`, cites a source for every claim (ticket key, author and date, or `file:line`), and replies in 30 lines or fewer. End the turn while they run.
+This is the most important step. Start every track below at once, one read-only sub-agent per track (Agents section of the conventions file). Each agent gets a short brief that starts with the agent-brief preamble (role: senior research analyst), with paths, writes its findings to `.scratch/<KEY>-research/<track>.md`, cites a source for every claim (ticket key, author and date, or `file:line`), and replies in 30 lines or fewer. End the turn while they run.
 
 | Track | It reads | It answers |
 |---|---|---|
@@ -188,7 +190,7 @@ Post the "plan is ready" comment on the ticket, as the Jira updates section of t
 Then hand off:
 
 - A Blocker that changes what gets built: write `pause`, ask the user, and wait.
-- "just blueprint": stop here. Mark the later stages skipped on the board. The worktrees and files stay.
+- "just blueprint", "only blueprint" or "plan only": stop here. Mark the later stages skipped on the board and rename the chat to `Done <KEY>`. The worktrees and files stay.
 - Otherwise: go back to the track skill. It starts `ship` with the key, the user's original message and its own definition of done.
 
 ## Never
@@ -201,4 +203,4 @@ Then hand off:
 - Never skip the before proof. It is skipped only when the user says "skip proof" in the call (see Proof in the conventions file).
 - Never create a worktree or a branch outside `<root>/worktrees/<KEY>/`, or by any way other than `worktree.sh add`.
 - Never push in this skill.
-- Never rename the chat to anything but the ticket key.
+- Never name the chat any way other than the Chat titles table in the conventions file says.

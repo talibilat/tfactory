@@ -11,7 +11,7 @@ Do only what this skill says, in its order, and never step outside the system (s
 
 The track for new or changed behavior. There is no bug to reproduce. Write down every acceptance criterion with its BA source before planning, and prove each one at the end.
 
-First read `~/.agents/skills/blueprint/references/conventions.md`. The user's message outranks everything here (see "Your message comes first" in that file). Words the user adds to the call: `plan only` or `just blueprint` stops after step 5, `build only` stops after the build, `agents N` or `no agents` sets the agent plan, `model <name>` sets the agents' model, `skip proof` waives the proof (only the user can say it).
+First read `~/.agents/skills/blueprint/references/conventions.md`. The user's message outranks everything here (see "Your message comes first" in that file). This track joins the ticket's run, as "One run per ticket" in that file says. Called again, it resumes from what is already verified instead of starting over. Words the user adds to the call: `plan only` or `just blueprint` stops after step 5, `build only` stops after the build and its quality gates (each a finished narrower request, not a waiver), `agents N` or `no agents` sets the agent plan, `model <name>` sets the agents' model, `skip proof` waives the proof (only the user can say it).
 
 ## To-do list
 

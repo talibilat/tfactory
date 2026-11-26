@@ -13,7 +13,7 @@ Turn a plan into a merged-quality PR. Work only inside the task's worktree. The 
 
 First read `~/.agents/skills/blueprint/references/conventions.md`. Read `references/quality-gates.md` before step 3, `~/.agents/skills/inspect/SKILL.md` before step 4, and `references/closeout.md` before step 6. If you are not Claude Code inside T3, read the "Using these skills from another agent" table and swap the tools as it says.
 
-Keep the user informed as the Progress board section of the conventions file says. Before each piece of work, record what you are fixing and why with `progress.py now`. Post an update (the table plus a few simple sentences: this part is fixed, this is why, now I am fixing that) whenever `progress.py due <KEY>` says "due".
+This skill joins the ticket's run, as "One run per ticket" in the conventions file says. It finds what is already verified, does its part, then carries on. Keep the user informed as the Progress board section says. Before each piece of work, record what you are fixing and why with `progress.py now`. After every step, update this skill's board row (`ship-build`, `crap`, `mutation`, `lane-after`, `ship-close`) and post the board with a few simple sentences: this part is fixed, this is why, now I am fixing that. Rename the chat only when the stage changes, as "Chat titles" says. Start every agent brief with the preamble in `~/.agents/skills/blueprint/references/agent-brief.md`.
 
 ## To-do list
 
@@ -39,7 +39,7 @@ Leave out `--key` when the task has no key. Tick each item when its Done conditi
 4. Check the plan against the requirement documents and the knowledge file. A plan written before a requirement changed is replanned first.
 5. Recap the plan in about 5 lines, then start building at once.
 
-"build only" means build only: stop after step 3 and say that QA, proof and the PR were skipped.
+"build only" means build only: stop after step 3, with its quality gates, and rename the chat to `Done <KEY>`. It is a finished narrower request, not a waiver. Say that QA, proof and the PR were not part of it.
 
 Done when the plan, the decision log, the before proof and the worktree are all in place.
 
@@ -56,6 +56,7 @@ Every builder works in its own slice worktree, so parallel edits never collide. 
 
    It makes `<root>/worktrees/<KEY>/_<short>-<subpart-id>` on branch `<branch>--<subpart-id>` and links `node_modules` from the task worktree when it can. When it prints "install needed", run the install command from the conventions table in the slice before the builder starts. Env files are not copied, so a test that needs one runs in the task worktree after the merge. A subpart that spans repos gets one slice per repo.
 3. Start one builder per subpart, as the Agents section of the conventions file says. Each brief must stand on its own:
+   - first, the agent-brief preamble, with the role that fits the slice's code (senior backend, frontend or full-stack engineer)
    - the slice worktree path, the plan path and the decision log path
    - the subpart id, what it must do, the files it owns, and the test that must pass
    - the checklist lines it covers
@@ -85,7 +86,7 @@ Run the track's own check. If it fails, the build is not done. Go back to the pl
 
 ## 3. Prove nothing else broke, and run the quality gates
 
-Run the baseline commands again. Every command must do at least as well as the baseline, with no new failures. Then check scope:
+Run the baseline commands again. Every command must do at least as well as the baseline, with no new failures. Record the result for each changed repo with `flow.py record <KEY> <wt> baseline ...`, as "Record every result" in `references/quality-gates.md` says. Then check scope:
 
 - `git -C <wt> diff --name-only origin/<default branch>...HEAD` lists only files the plan lists, plus the repro test.
 - Any extra file needs a written reason in the plan or gets reverted.
@@ -96,13 +97,15 @@ Then run the two quality gates in `references/quality-gates.md`, in order:
 1. Gate 1, `quality crapper --changed --base origin/<default branch> --threshold 6`. A failure starts a cleaner, then the gate runs again.
 2. Gate 2, `quality mutator --changed --base origin/<default branch>`, only after Gate 1 passes. A survivor starts a hardener (the `hardening` skill), then the gate runs again.
 
-Each gate allows 3 fix rounds. Record "crap" and "mutation" on the progress board and hand both lines to `inspect`. Skip a gate only when the user says so in the call, and write that in `<KEY>-reviews.md`.
+After every crapper and mutator run in each changed repo, record it with `flow.py record` and the real counts from the tool output. Every fix commit makes the earlier results stale, so run the baseline and both gates again on the new commit. Each gate allows 3 fix rounds. Record the `crap` and `mutation` rows on the progress board and hand both lines to `inspect`. Skip a gate only when the user says so in the call, and write that in `<KEY>-reviews.md`. Inspection then still needs the user's signed waiver for that check: a request made with `python3 -I ~/.agents/tools/flow_approval.py new`, bound to the repo and the head commit, which expires within 1 hour (see "Waivers" in `references/quality-gates.md`).
 
-Done when the baseline is no worse, the scope check is clean, and both gates pass on the current commit.
+Done when the baseline is no worse, the scope check is clean, and `python3 -I ~/.agents/tools/flow.py status <KEY> --root <root>` shows, for each changed repo on the current commit, `baseline` passed, and `crap` and `mutation` each passed, not applicable (a docs-only repo) or waived by user. A gate shows `waived by user` only with the user's signed waiver, never `passed`.
 
 ## 4. inspect, and the loop
 
-Follow `~/.agents/skills/inspect/SKILL.md` in pipeline mode. It runs the four code reviewers, the live run and the QA validation, and returns a score, a verdict and the findings.
+First run the flow check, as "Flow check before inspection" in the conventions file says. Start `inspect` only when `python3 -I ~/.agents/tools/flow.py next <KEY> --root <root>` exits 0. A block stops the work and goes to the user. Only the user can approve a waiver. Run the check again before each new round.
+
+Then follow `~/.agents/skills/inspect/SKILL.md` in pipeline mode. It runs the four code reviewers, the live run and the QA validation, and returns a score, a verdict and the findings.
 
 `ship` and `inspect` are satisfied only when all of these hold on the current commit:
 
@@ -149,7 +152,7 @@ Done when `gate after` prints `after gate: PASS` and every picture has been look
 
 ## 6. Close out
 
-Read the close-out notes in the track skill's last step first. They add to `references/closeout.md` (a QA return opens a new PR from the same branch and tags nobody). Then follow `references/closeout.md`, which ends only when the PR is merged. In order: publish the proof, push, open the PR with the before and after table, comment in Jira with the same proof and attach the screenshots, archive and delete the worktree, hand the PR to `babysit` (fix CI, resolve every comment), move the ticket to Code Review and log work, then stay until it merges. Keep Jira current at each milestone.
+Read the close-out notes in the track skill's last step first. They add to `references/closeout.md` (a QA return opens a new PR from the same branch and tags nobody). Then follow `references/closeout.md`, which ends only when the PR is merged. In order: publish the proof, push, open the PR with the before and after table, comment in Jira with the same proof and attach the screenshots, hand the PR to `babysit` (fix CI, resolve every comment), move the ticket to Code Review and log work, then stay until it merges. Keep the task folder and its worktrees until every required PR is merged, because `babysit` fixes CI and answers comments in them. `babysit` archives the folder after the last merge. Keep Jira current at each milestone.
 
 ## The annotated pair
 
@@ -172,7 +175,8 @@ No PR, no Jira comment, no Jira attachment and no ticket move until the before a
 - Never let a sub-agent commit or push.
 - Never edit outside the plan's files without a written reason.
 - Never run a bigger model without a card.
-- Never start `inspect` before both quality gates pass or are skipped by the user.
+- Never start `inspect` before both quality gates pass, do not apply (docs only) or are waived by the user, and `flow.py next <KEY> --root <root>` exits 0.
+- Never archive, move or delete the task folder. `babysit` archives it after every required PR is merged.
 - Never run a full-repo mutation run inside this skill. Use `--changed`.
 - Never call the work done below 100, or without a live run PASS on the current commit.
 - Never open a PR or update Jira without the before and after comparison. Only the user can waive it, by saying "skip proof" in the call.

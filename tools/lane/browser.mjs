@@ -10,8 +10,8 @@
 // LANE_SCRIPTS=<this folder>, LANE_N=<lane number>. HEADLESS=1 hides the window. Use it only when there is no other option,
 // and say why in the Method line of the repro file.
 import { execFileSync } from 'node:child_process';
-import { existsSync, mkdirSync } from 'node:fs';
-import { join } from 'node:path';
+import { existsSync, mkdirSync, writeFileSync } from 'node:fs';
+import { basename, join } from 'node:path';
 import { chromium } from 'playwright-core';
 
 const PASSWORDS = { 'test@example.com': 'password123' };
@@ -106,4 +106,29 @@ export async function openLane({ as = 'e2e-professor@example.com', password, vie
 		await page.waitForLoadState('networkidle', { timeout: 20_000 }).catch(() => {});
 	};
 	return { browser, context, page, goto, close: () => browser.close() };
+}
+
+// Numbered screenshots for a flow. Every shot needs a purpose: one line on what it shows and why it is
+// here. It goes into the flow's log as `SHOT NN-<name>.png: <purpose>`, ready for the repro file's
+// "looking at" column. A shot byte for byte the same as the one before shows nothing new, so it is not
+// saved; the log says `SAME NN-<name>.png not saved` and names the earlier file. Pass { always: true }
+// for a shot that must be kept anyway, such as the screen when a step failed.
+//
+//   const shot = proofShots(page, PROOF, log);
+//   const { file, saved } = await shot(3, 'save-button-after-empty-course', 'Save button after saving a course with no chapters');
+export function proofShots(page, dir, log) {
+	let last = null;
+	return async function shot(no, name, purpose, { always = false } = {}) {
+		if (!String(purpose ?? '').trim()) throw new Error(`screenshot ${name} has no purpose; say what it shows and why it is here`);
+		const file = join(dir, `${String(no).padStart(2, '0')}-${name}.png`);
+		const bytes = await page.screenshot({ fullPage: true });
+		if (!always && last && bytes.equals(last.bytes)) {
+			log(`  SAME ${basename(file)} not saved: the screen is identical to ${basename(last.file)} (${purpose})`);
+			return { file: last.file, saved: false };
+		}
+		writeFileSync(file, bytes);
+		last = { file, bytes };
+		log(`  SHOT ${basename(file)}: ${purpose}`);
+		return { file, saved: true };
+	};
 }

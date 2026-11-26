@@ -73,7 +73,7 @@ No two subparts own the same file. Independent subparts run in parallel.
 
 ## Plan check
 
-Before showing the plan, run one Sonnet child (medium effort) that reads the `ticket-prework-review` skill and the pstack `blast-radius` skill (see Companion skills in the conventions file), then reviews `<KEY>-ticket.md` and `<KEY>-plan.md`. Tell it:
+Before showing the plan, run one Sonnet child (medium effort) that reads the `ticket-prework-review` skill and the pstack `blast-radius` skill (see Companion skills in the conventions file), then reviews `<KEY>-ticket.md` and `<KEY>-plan.md`. Start its brief with the agent-brief preamble from `agent-brief.md` (role: senior staff reviewer). Tell it:
 
 - Do not rename the chat.
 - Do not ask questions.

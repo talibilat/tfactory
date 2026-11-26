@@ -1,12 +1,13 @@
 // Golden path through the real UI: course -> New Version -> Course Foundation -> upload a PDF -> real parse ->
 // extract -> review (accept all) -> validate -> approve -> create Smart Syllabus -> validate -> publish.
-// Every step saves a numbered screenshot and one log line in the proof folder.
+// Every step saves a numbered screenshot with its purpose (what it shows and why) and one log line in the
+// proof folder. A screenshot identical to the one before is not saved; steps.log says so.
 //
 // Usage: lane flow <N> foundation --pdf <file.pdf> [--course <courseId>] [--as <email>] [--until <step>]
 // Env from `lane flow`: LANE_FE, LANE_DIR, LANE_SCRIPTS, PROOF_DIR.
 import { appendFileSync, mkdirSync } from 'node:fs';
 import { basename, join } from 'node:path';
-import { openLane } from '../browser.mjs';
+import { openLane, proofShots } from '../browser.mjs';
 
 const args = Object.fromEntries(
 	process.argv.slice(2).reduce((acc, cur, i, all) => (cur.startsWith('--') ? [...acc, [cur.slice(2), all[i + 1]]] : acc), []),
@@ -39,11 +40,8 @@ function log(line) {
 	appendFileSync(LOG, msg + '\n');
 }
 
-async function shot(name) {
-	const file = join(PROOF, `${String(stepNo).padStart(2, '0')}-${name}.png`);
-	await page.screenshot({ path: file, fullPage: true });
-	return file;
-}
+const takeShot = proofShots(page, PROOF, log);
+const shot = (name, purpose, opts) => takeShot(stepNo, name, purpose, opts);
 
 async function describe() {
 	return page.evaluate(() => {
@@ -58,7 +56,7 @@ async function describe() {
 	});
 }
 
-async function step(name, fn) {
+async function step(name, purpose, fn) {
 	stepNo += 1;
 	if (skipping) {
 		if (name !== FROM) { log(`STEP ${stepNo} ${name} skipped (--from ${FROM})`); return; }
@@ -77,12 +75,13 @@ async function step(name, fn) {
 	log(`STEP ${stepNo} ${name} ...`);
 	try {
 		const note = await fn();
-		const file = await shot(name);
-		log(`STEP ${stepNo} ${name} OK${note ? ` (${note})` : ''} -> ${basename(file)}`);
+		const { file, saved } = await shot(name, purpose);
+		log(`STEP ${stepNo} ${name} OK${note ? ` (${note})` : ''} -> ${saved ? basename(file) : `no new shot, same screen as ${basename(file)}`}`);
 	} catch (err) {
-		const file = await shot(`${name}-FAILED`).catch(() => '(no screenshot)');
+		const reason = err.message.split('\n')[0];
+		const { file } = await shot(`${name}-FAILED`, `The screen when step ${name} failed: ${reason}`, { always: true }).catch(() => ({ file: '(no screenshot)' }));
 		const state = await describe().catch(() => ({}));
-		log(`STEP ${stepNo} ${name} FAILED: ${err.message.split('\n')[0]} -> ${basename(String(file))}`);
+		log(`STEP ${stepNo} ${name} FAILED: ${reason} -> ${basename(String(file))}`);
 		log(`  page state: ${JSON.stringify(state)}`);
 		await close();
 		process.exit(1);
@@ -102,7 +101,7 @@ async function api(path) {
 
 const state = { courseId: COURSE, syllabusId: args.syllabus };
 
-await step('open-course', async () => {
+await step('open-course', 'Course page with its Syllabus Versions list, where the journey starts', async () => {
 	if (!state.courseId) {
 		const mine = await api('/courses/my-courses');
 		const list = Array.isArray(mine) ? mine : mine.data ?? mine.items ?? [];
@@ -121,7 +120,7 @@ await step('open-course', async () => {
 	return `course ${state.courseId}`;
 });
 
-await step('choose-foundation', async () => {
+await step('choose-foundation', 'Course Foundation wizard open on the Sources step for the new version', async () => {
 	await page.getByRole('button', { name: 'New Version' }).click();
 	await page.getByRole('dialog', { name: 'Create New Syllabus Version' }).waitFor();
 	await page.getByRole('button', { name: /Open Course Foundation/ }).click();
@@ -137,7 +136,7 @@ await step('choose-foundation', async () => {
 	await tid('foundation-sources-step').waitFor({ timeout: 60_000 });
 });
 
-await step('add-source', async () => {
+await step('add-source', 'Sources list with the uploaded PDF added as a Course Handbook', async () => {
 	await tid('foundation-add-source-open').click();
 	await tid('add-source-modal').waitFor();
 	await tid('add-source-type').click();
@@ -150,7 +149,7 @@ await step('add-source', async () => {
 	return basename(PDF);
 });
 
-await step('wait-for-parse', async () => {
+await step('wait-for-parse', 'Source row marked processed by the real document parser', async () => {
 	// The real doc-parser runs; the source row shows its processing state. Reload until it is processed.
 	const deadline = Date.now() + 20 * 60_000;
 	let last = '';
@@ -170,7 +169,7 @@ await step('wait-for-parse', async () => {
 	throw new Error('parse did not finish in 20 minutes');
 });
 
-await step('extract', async () => {
+await step('extract', 'Generation Summary shown after extraction finished', async () => {
 	await tid('foundation-sources-continue').click();
 	await tid('foundation-extract-confirm-confirm').click();
 	// Extraction runs as a background job (about 5-10 minutes for a small handbook). The page polls, but a
@@ -193,7 +192,7 @@ await step('extract', async () => {
 	throw new Error('extraction did not reach the Generation Summary in 25 minutes');
 });
 
-await step('summary', async () => {
+await step('summary', 'Review step listing the extracted candidates to accept or reject', async () => {
 	await tid('foundation-summary-continue').click();
 	await tid('foundation-review-step').waitFor({ timeout: 60_000 });
 	await tid('foundation-candidate-list').waitFor({ timeout: 60_000 });
@@ -310,7 +309,7 @@ async function resolveConflicts() {
 	return n;
 }
 
-await step('review-accept-all', async () => {
+await step('review-accept-all', 'Validate step reached after every pending candidate was accepted', async () => {
 	const reloadReview = async () => {
 		await page.reload({ waitUntil: 'domcontentloaded' });
 		await tid('course-foundation-wizard').waitFor({ timeout: 60_000 });
@@ -335,7 +334,7 @@ await step('review-accept-all', async () => {
 	return `${n} accept actions, ${await pendingCount()} candidates still pending`;
 });
 
-await step('validate-foundation', async () => {
+await step('validate-foundation', 'Approve step reached after validation passed or its issues were waived', async () => {
 	// Blocking issues are real product results on this PDF, not flow errors. The flow records each one
 	// as a FINDING in steps.log, waives it once with a reason (the app's own path for issues raised
 	// against accepted content) and revalidates. If validation still blocks, the flow stops here: picking
@@ -364,7 +363,7 @@ await step('validate-foundation', async () => {
 			await page.waitForTimeout(2000);
 		}
 		notes.push(`waived ${count} blocking issue(s)`);
-		await shot('validate-waived');
+		await shot('validate-waived', `Validation issues waived with a reason (${count}), before revalidating`);
 		const reval = page.locator('[data-testid="foundation-validate-revalidate"], [data-testid="foundation-validation-revalidate"]').first();
 		if (await reval.isEnabled({ timeout: 5000 }).catch(() => false)) { await reval.click(); notes.push('revalidated'); }
 		await page.waitForTimeout(5000);
@@ -378,7 +377,7 @@ await step('validate-foundation', async () => {
 	return notes.join(', ') || 'passed first time';
 });
 
-await step('approve-foundation', async () => {
+await step('approve-foundation', 'Approve step with the baseline confirmed and Create Smart Syllabus enabled', async () => {
 	await tid('foundation-approve-step').waitFor();
 	for (const notice of ['foundation-approval-permission-notice', 'foundation-approval-blocked-notice', 'foundation-approval-not-ready-notice']) {
 		if (await tid(notice).isVisible({ timeout: 1000 }).catch(() => false)) throw new Error(`approval not possible: ${(await tid(notice).innerText()).replace(/\s+/g, ' ')}`);
@@ -402,7 +401,7 @@ await step('approve-foundation', async () => {
 	if (!(await cont.isEnabled())) throw new Error('approve did not enable Create Smart Syllabus');
 });
 
-await step('create-smart-syllabus', async () => {
+await step('create-smart-syllabus', 'New Smart Syllabus open after it was created from the foundation', async () => {
 	// After approval the wizard shows how the foundation maps into a syllabus and a "Launch Smart Syllabus"
 	// button (older builds used foundation-approve-continue).
 	const created = page.waitForResponse(
@@ -433,7 +432,7 @@ await step('create-smart-syllabus', async () => {
 	return `syllabus ${state.syllabusId}: ${v.learningOutcomes?.length ?? '?'} outcomes, ${v.syllabusModules?.length ?? '?'} modules`;
 });
 
-await step('publish-validate', async () => {
+await step('publish-validate', 'Publish page with the validation result and the Publish button enabled', async () => {
 	await goto(`/syllabus/${state.syllabusId}/publish`);
 	await page.getByRole('button', { name: 'Validate' }).click();
 	const publish = tid('publish-syllabus-button');
@@ -447,7 +446,7 @@ await step('publish-validate', async () => {
 	return `validation ${verdict}`;
 });
 
-await step('publish', async () => {
+await step('publish', 'Syllabus marked Published after Confirm and Go Live', async () => {
 	await tid('publish-syllabus-button').click();
 	await page.getByRole('button', { name: 'Confirm & Go Live' }).click();
 	await page.getByText(/Syllabus is Published/i).first().waitFor({ timeout: 120_000 });

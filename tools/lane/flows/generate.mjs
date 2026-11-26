@@ -1,12 +1,13 @@
 // Smart Syllabus content through the real UI: upload a learning asset -> real parse (shared doc-parser) ->
 // Full AI Gen -> wait for the run -> approve the review -> publish validation -> publish.
-// Every step saves a numbered screenshot and one log line in the proof folder.
+// Every step saves a numbered screenshot with its purpose (what it shows and why) and one log line in the
+// proof folder. A screenshot identical to the one before is not saved; steps.log says so.
 //
 // Usage: lane flow <N> generate --syllabus <versionId> --pdf <file.pdf> [--as <email>] [--from <step>] [--until <step>]
 // The `foundation` flow prints the syllabus id it created.
 import { appendFileSync, mkdirSync } from 'node:fs';
 import { basename, join } from 'node:path';
-import { openLane } from '../browser.mjs';
+import { openLane, proofShots } from '../browser.mjs';
 
 const args = Object.fromEntries(
 	process.argv.slice(2).reduce((acc, cur, i, all) => (cur.startsWith('--') ? [...acc, [cur.slice(2), all[i + 1]]] : acc), []),
@@ -29,11 +30,8 @@ function log(line) {
 	console.log(msg);
 	appendFileSync(LOG, msg + '\n');
 }
-async function shot(name) {
-	const file = join(PROOF, `${String(stepNo).padStart(2, '0')}-${name}.png`);
-	await page.screenshot({ path: file, fullPage: true });
-	return file;
-}
+const takeShot = proofShots(page, PROOF, log);
+const shot = (name, purpose, opts) => takeShot(stepNo, name, purpose, opts);
 async function describe() {
 	return page.evaluate(() => ({
 		url: location.pathname,
@@ -42,7 +40,7 @@ async function describe() {
 		buttons: [...new Set([...document.querySelectorAll('button')].filter((b) => b.offsetParent).map((b) => `${b.innerText.trim().slice(0, 40)}${b.disabled ? ' (disabled)' : ''}`).filter(Boolean))].slice(0, 60),
 	}));
 }
-async function step(name, fn) {
+async function step(name, purpose, fn) {
 	stepNo += 1;
 	if (skipping) {
 		if (name !== args.from) { log(`STEP ${stepNo} ${name} skipped (--from ${args.from})`); return; }
@@ -51,11 +49,12 @@ async function step(name, fn) {
 	log(`STEP ${stepNo} ${name} ...`);
 	try {
 		const note = await fn();
-		const file = await shot(name);
-		log(`STEP ${stepNo} ${name} OK${note ? ` (${note})` : ''} -> ${basename(file)}`);
+		const { file, saved } = await shot(name, purpose);
+		log(`STEP ${stepNo} ${name} OK${note ? ` (${note})` : ''} -> ${saved ? basename(file) : `no new shot, same screen as ${basename(file)}`}`);
 	} catch (err) {
-		const file = await shot(`${name}-FAILED`).catch(() => '(no screenshot)');
-		log(`STEP ${stepNo} ${name} FAILED: ${err.message.split('\n')[0]} -> ${basename(String(file))}`);
+		const reason = err.message.split('\n')[0];
+		const { file } = await shot(`${name}-FAILED`, `The screen when step ${name} failed: ${reason}`, { always: true }).catch(() => ({ file: '(no screenshot)' }));
+		log(`STEP ${stepNo} ${name} FAILED: ${reason} -> ${basename(String(file))}`);
 		log(`  page state: ${JSON.stringify(await describe().catch(() => ({})))}`);
 		await close();
 		process.exit(1);
@@ -68,7 +67,7 @@ async function api(path) {
 	return r.json();
 }
 
-await step('upload-asset', async () => {
+await step('upload-asset', 'Assets list after the learning asset upload dialog closed', async () => {
 	if (!PDF) throw new Error('--pdf is required');
 	await goto(`/syllabus/${SYL}/assets`);
 	await tid('asset-list-open-upload-modal').click();
@@ -83,7 +82,7 @@ await step('upload-asset', async () => {
 	return `asset ${state.assetId ?? '(id from list)'}`;
 });
 
-await step('wait-asset-parse', async () => {
+await step('wait-asset-parse', 'Assets list once the real parser finished the uploaded asset', async () => {
 	// The asset goes through the real doc-parser in the base stack. Poll the same endpoint the app uses.
 	if (!state.assetId) {
 		const list = await api(`/smart-syllabus/learning-assets?syllabusVersionId=${SYL}`);
@@ -106,7 +105,7 @@ await step('wait-asset-parse', async () => {
 	throw new Error('asset parse did not finish in 20 minutes');
 });
 
-await step('open-full-ai-gen', async () => {
+await step('open-full-ai-gen', 'Full AI Gen dialog open on the assets page, ready to start generation', async () => {
 	await goto(`/syllabus/${SYL}/assets`);
 	// Indexing (embeddings) runs after the parse. A failed asset keeps Full AI Gen disabled.
 	if (await page.locator('[data-testid^="processing-status-badge-failed"]').first().isVisible({ timeout: 3000 }).catch(() => false)) {

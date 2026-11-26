@@ -109,9 +109,9 @@ Options:
   --mutation-warning <number>   Warn when a file selects more covered sites
                                 than this. Default: 50.
   --max-workers <number>        Run at most this many mutants of one file at
-                                once. Default: one per core. The run uses the
-                                smaller of this limit, the cores, and the
-                                number of selected sites.
+                                once. Default: 4, or MUTATOR_MAX_WORKERS. The
+                                run uses the smaller of this limit, the cores,
+                                and the number of selected sites.
   --verbose                     Print each test command and each mutant.
 
 Arguments:

@@ -13,7 +13,7 @@ See the bug with your own eyes, and keep the proof. A bug that has not happened 
 
 Read `~/.agents/skills/blueprint/references/conventions.md` first. If `blueprint` called you, the ticket file, the worktrees and the baseline already exist. If the user called you alone, run `blueprint` steps 1 to 4 first, then continue here, and hand back to `blueprint` step 6 when you finish.
 
-Update the `repro` row of the progress board after each step.
+This skill joins the ticket's run, as "One run per ticket" in the conventions file says. After every step, update the `repro` row of the progress board and post the board. Rename the chat to `Reproducing <KEY>` when it starts, as "Chat titles" says. Start every agent brief with the preamble in `~/.agents/skills/blueprint/references/agent-brief.md`.
 
 ## To-do list
 
@@ -91,7 +91,7 @@ Nothing moves forward until the bug reproduces. Do not stop at the first failure
 
 When a round makes it reproduce, go on to step 5. When 3 rounds fail, or the blocker needs the user:
 
-1. Set the first line of `<KEY>-repro.md` to `Reproduced: no` (or `already fixed`). Save what you tried under `before/`, close every window and tab, and give the lane back.
+1. Set the first line of `<KEY>-repro.md` to `Reproduced: no` (or `already fixed`). Save what you tried under `before/`, close every window and tab, and give the lane back. Rename the chat to `Needs you <KEY>`, or `Blocked <KEY>` when the blocker is Docker, a lane or a missing service.
 2. Post a short plain-words report in chat, 8 lines or fewer, and save it at the end of `<KEY>-repro.md`:
 
    ```

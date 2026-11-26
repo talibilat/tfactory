@@ -54,7 +54,7 @@ Done when the user has picked an option, or their words already picked one.
 
 ## 4. Run it
 
-Read the skill for the approach they picked and follow it. Brief each agent as a peer: the goal, the files to read, what is already ruled out, and what done looks like. Give each agent that edits the repo its own worktree. Wait for the results and use them. Work you handed to an agent stays with that agent.
+Read the skill for the approach they picked and follow it. Start every brief with the preamble in `~/.agents/skills/blueprint/references/agent-brief.md`, with the role filled in. Then brief each agent as a peer: the goal, the files to read, what is already ruled out, and what done looks like. Give each agent that edits the repo its own worktree. Wait for the results and use them. Work you handed to an agent stays with that agent.
 
 The host's tool rules come first: when the host (for example T3 Code) names the tool for a background agent or an agent on another provider, use that tool.
 

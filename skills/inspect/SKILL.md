@@ -37,17 +37,25 @@ Leave out `--key` when the task has no key. Tick each item when its Done conditi
 
 Read these. Paths are under `~/.agents/skills/`.
 
-1. `blueprint/references/conventions.md`: "Writing", "Your message comes first", "Using these skills from another agent", "Agents", "Progress board", "Evidence", "Jira" and "Jira results are large".
+1. `blueprint/references/conventions.md`: "Writing", "One run per ticket", "Your message comes first", "Using these skills from another agent", "Flow check before inspection", "Agents", "Progress board", "Chat titles", "Evidence", "Jira" and "Jira results are large".
 2. `inspect/references/setup.md`: the bug project key, repos and their layers, platform URL, API docs URL and browsers. If it is missing, copy `setup.example.md` to `setup.md` in that folder, fill in what the tools tell you, and ask the user for the rest.
+3. `blueprint/references/setup.md`: the root folder, written `<root>` below. The inspect setup file has no root line.
 
-The user's message outranks everything here. A ticket key means no questions. Stop only when a Jira write needs confirmation, when access is missing, or when the verdict is "Needs BA input".
+The user's message outranks everything here. A ticket key means no questions. Stop only when a Jira write needs confirmation, when access is missing, when the flow check blocks, or when the verdict is "Needs BA input".
+
+This skill joins the ticket's run, as "One run per ticket" in the conventions file says. "just inspect" stops after the report, with no fixes, and renames the chat to `Done <KEY>`. Rename the chat to `Reviewing <KEY>` when step 1 starts, as "Chat titles" says. Start every agent brief with the preamble in `~/.agents/skills/blueprint/references/agent-brief.md`.
 
 ## 1. Run the gate
 
 Two ways in:
 
 - **Pipeline mode.** `ship` reached its QA step. The worktree, the ticket file, the plan, the decision log, the repro steps and the before proof exist.
-- **Alone.** The user typed `inspect` with a ticket key, a branch or a PR. Find the code (worktree, branch or PR diff). With code, run all five checks. With no code to review (a ticket already deployed), run only the QA validation and mark the four reviewers skipped on the board.
+- **Alone.** The user typed `inspect` with a ticket key, a branch or a PR. Find the code (worktree, branch or PR diff). With code, run all five checks.
+- **QA-only.** The user typed `inspect` for a ticket that is already deployed, with no code change to review. Run only the QA validation (steps 3 and 4, sections 2 to 5) on the deployed environment, and mark the four reviewers skipped on the board. A missing or archived task folder is normal here. Do not create worktrees for it.
+
+Before step 1 in pipeline mode and alone mode, run the flow check, as "Flow check before inspection" in the conventions file says. Start only when `python3 -I ~/.agents/tools/flow.py next <KEY> --root <root>` exits 0. A block goes to the user, and only the user can approve a waiver. When the block is only that the task folder is missing, or that the baseline or a gate has no result for the current commit, because `ship` never gated this code, do that earlier stage first (`ship` step 3), as "One run per ticket" in the conventions file says. Then run the check again. A block that is left after that goes to the user. Under "just inspect", that `ship` step 3 runs and records the baseline and both gates but starts no cleaner or hardener, because "just inspect" makes no fixes. A gate that fails is then a block for the user.
+
+QA-only mode skips the flow check, because the check guards the code review and there is no code to review. Write "Flow check: skipped, QA-only mode, no code change to review" in the report's SCOPE. If you run `flow.py` anyway, its "Nothing to inspect" or "no task folder" block is expected in this mode and is not a stop.
 
 Steps:
 
@@ -61,7 +69,7 @@ Steps:
 
 In pipeline mode, `ship` has already run the crapper and mutator gates (`ship/references/quality-gates.md`). Read their two board lines. Reviewers do not re-score complexity or test strength that a gate already passed. A reviewer who finds a weak test or a complex function still reports it, and `ship` sends it back through the gates.
 
-Update the board after each step: each reviewer row moves from started, to findings verified, to clean.
+Update the board after each step and post it: each reviewer row moves from started, to findings verified, to clean. Each reviewer sets its own row to started on the shared board. You set findings verified and clean, and only you rename the chat.
 
 ## 2. Validation workflow
 

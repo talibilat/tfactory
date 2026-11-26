@@ -34,7 +34,7 @@ GPT Terra (`gpt-6.1-terra`) takes the GPT seat when Sol is unavailable. Call `or
 ## Steps
 
 1. **Get the work ready.** Fix the problems you already know about and run the relevant checks first. The council judges your best version.
-2. **Brief all three at once**, one sub-agent each, with the same brief: the question, the paths to read (plan, decision log, diff, ticket file), and the rules. The rules: read only, no edits, no questions to the user, every claim backed by a `file:line` or a quote, a score out of 10, and a reply of 40 lines or fewer written to `.scratch/<KEY>-reviews/council-<member>-r<N>.md`. End the turn while they run.
+2. **Brief all three at once**, one sub-agent each, with the same brief. It starts with the agent-brief preamble from `~/.agents/skills/blueprint/references/agent-brief.md` (role: senior staff reviewer), then gives the question, the paths to read (plan, decision log, diff, ticket file), and the rules. The rules: read only, no edits, no questions to the user, every claim backed by a `file:line` or a quote, a score out of 10, and a reply of 40 lines or fewer written to `.scratch/<KEY>-reviews/council-<member>-r<N>.md`. End the turn while they run.
 3. **Compare.** Put the answers side by side: where all three agree, where they differ, and what each one alone noticed. Check every finding yourself against the code or the ticket before you act on it.
 4. **Act.** Make the changes you agree with. For each one you decline, write the reason. A product question the council raises goes to the BA's words in Jira, never to a vote.
 5. **Ask again** after changes, with a fresh round. Stop when every member scores 9 or more, or when a round brings no new verified finding. At most 3 rounds.
